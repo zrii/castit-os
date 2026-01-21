@@ -52,31 +52,45 @@
     in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
   };
 
-  # ==========================================
+# ==========================================
   # 5. REMOTE ACCESS (Tailscale Auto-Join)
   # ==========================================
   services.openssh.enable = true;
   services.tailscale.enable = true;
 
-  # This script runs on boot. If it finds 'ts-authkey' on the boot partition,
-  # it logs the device into your Tailscale network automatically.
   systemd.services.tailscale-autoconnect = {
     description = "Automatic Tailscale Join";
+    
+    # Make sure we don't run until the network is definitely up
     after = [ "network-pre.target" "tailscaled.service" ];
     wants = [ "network-pre.target" "tailscaled.service" ];
     wantedBy = [ "multi-user.target" ];
+    
     serviceConfig.Type = "oneshot";
+    
+    # We use '|| true' to ensure the script doesn't crash if a check fails
     script = ''
-      # Wait for tailscale to settle
+      # 1. Wait a moment for the daemon to be ready
       sleep 5
       
-      # Check if we are already logged in
-      if ${pkgs.tailscale}/bin/tailscale status | grep -q "Logged out"; then
-        # Look for key on boot partition (works for RPi and many USB installs)
+      # 2. Check if we are already logged in. 
+      # We pipe to grep to check for "Logged out" status.
+      STATUS=$(${pkgs.tailscale}/bin/tailscale status || true)
+      
+      if echo "$STATUS" | grep -q "Logged out"; then
+        echo "Device is logged out. Checking for auth key..."
+        
+        # 3. Check for the key file
         if [ -f /boot/ts-authkey ]; then
+          echo "Key found! Authenticating..."
           KEY=$(cat /boot/ts-authkey)
-          ${pkgs.tailscale}/bin/tailscale up --authkey=$KEY
+          # Authenticate using the key
+          ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY"
+        else
+          echo "No auth key found in /boot/ts-authkey"
         fi
+      else
+        echo "Device is already logged in or tailscale is busy."
       fi
     '';
   };
