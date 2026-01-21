@@ -3,7 +3,6 @@
   # ==========================================
   # 1. BOOTLOADER & HARDWARE
   # ==========================================
-  # We leave bootloader config to the flake (differs for Pi vs Intel)
   networking.hostName = "castit-player";
   networking.networkmanager.enable = true; 
   time.timeZone = "Europe/Amsterdam"; 
@@ -14,7 +13,7 @@
   users.users.kiosk = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "video" "audio" ];
-    initialPassword = "castit-setup"; # <--- CHANGE FOR PRODUCTION
+    initialPassword = "castit-setup"; 
   };
 
   # ==========================================
@@ -52,97 +51,53 @@
     in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
   };
 
-# ==========================================
-  # 5. REMOTE ACCESS (Tailscale Auto-Join)
+  # ==========================================
+  # 5. REMOTE ACCESS (Simplified Script)
   # ==========================================
   services.openssh.enable = true;
   services.tailscale.enable = true;
 
   systemd.services.tailscale-autoconnect = {
     description = "Automatic Tailscale Join";
-    
-    # Make sure we don't run until the network is definitely up
     after = [ "network-pre.target" "tailscaled.service" ];
     wants = [ "network-pre.target" "tailscaled.service" ];
     wantedBy = [ "multi-user.target" ];
-    
     serviceConfig.Type = "oneshot";
     
-    # We use '|| true' to ensure the script doesn't crash if a check fails
+    # Simplified logic: No nested 'if' statements to break syntax
     script = ''
-      # 1. Wait a moment for the daemon to be ready
       sleep 5
       
-      # 2. Check if we are already logged in. 
-      # We pipe to grep to check for "Logged out" status.
-      STATUS=$(${pkgs.tailscale}/bin/tailscale status || true)
+      # 1. If we are NOT logged out (meaning we are logged in), exit immediately.
+      ${pkgs.tailscale}/bin/tailscale status | grep -v "Logged out" && exit 0
       
-      if echo "$STATUS" | grep -q "Logged out"; then
-        echo "Device is logged out. Checking for auth key..."
-        
-        # 3. Check for the key file
-        if [ -f /boot/ts-authkey ]; then
-          echo "Key found! Authenticating..."
-          KEY=$(cat /boot/ts-authkey)
-          # Authenticate using the key
-          ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY"
-        else
-          echo "No auth key found in /boot/ts-authkey"
-        fi
-      else
-        echo "Device is already logged in or tailscale is busy."
-      fi
+      # 2. If the key file does NOT exist, exit immediately.
+      [ ! -f /boot/ts-authkey ] && exit 0
+      
+      # 3. If we are here, we are logged out AND have a key. Connect.
+      KEY=$(cat /boot/ts-authkey)
+      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY"
     '';
   };
 
   # ==========================================
-  # 6. AUTO UPDATER (The Real Code)
+  # 6. AUTO UPDATER 
   # ==========================================
-  # This creates a background service that pulls your git repo
   systemd.services.update-signage = {
     description = "Pull latest configuration from Git";
     path = [ pkgs.git pkgs.nixos-rebuild pkgs.nix ];
     script = ''
-      # 1. Setup Directory
       mkdir -p /etc/castit-os
       cd /etc/castit-os
-
-      # 2. Clone if empty, otherwise Pull
+      # Use || true so build doesn't fail if repo doesn't exist yet
       if [ ! -d .git ]; then
-        # REPLACE THIS URL WITH YOUR REAL REPO LATER
-        ${pkgs.git}/bin/git clone https://github.com/YOUR_USER/castit-os.git .
+        ${pkgs.git}/bin/git clone https://github.com/YOUR_USER/castit-os.git . || true
       else
-        ${pkgs.git}/bin/git pull
+        ${pkgs.git}/bin/git pull || true
       fi
-
-      # 3. Apply Update (Uncomment the next line when you have a real repo!)
-      # nixos-rebuild switch --flake .#intel-player
     '';
   };
 
-  # ==========================================
-  # 7. BRANDING (Silent Boot)
-  # ==========================================
-  boot.plymouth = {
-    enable = true;
-    # You can choose standard themes like "bgrt" (uses OEM logo) or "spinner"
-    # To use a custom Castit logo requires creating a custom theme package (see below)
-  };
-
-  # Hide the "scrolling text" during boot
-  boot.consoleLogLevel = 0;
-  boot.initrd.verbose = false;
-  boot.kernelParams = [
-    "quiet"
-    "splash"
-    "boot.shell_on_fail"
-    "loglevel=3"
-    "rd.systemd.show_status=false"
-    "rd.udev.log_level=3"
-    "udev.log_priority=3"
-  ];
-
-  # Run the updater 10 minutes after boot, and then every hour
   systemd.timers.update-signage = {
     wantedBy = [ "timers.target" ];
     timerConfig = {
@@ -150,6 +105,55 @@
       OnUnitActiveSec = "1h";
       Unit = "update-signage.service";
     };
+  };
+
+  # ==========================================
+  # 7. BRANDING (Silent Boot)
+  # ==========================================
+  boot.consoleLogLevel = 0;
+  boot.initrd.verbose = false;
+  boot.kernelParams = [
+    "quiet" "splash" "boot.shell_on_fail" 
+    "loglevel=3" "rd.systemd.show_status=false" 
+    "rd.udev.log_level=3" "udev.log_priority=3"
+  ];
+
+  boot.plymouth = {
+    enable = true;
+    theme = "castit";
+    themePackages = [
+      (pkgs.stdenv.mkDerivation {
+        name = "castit-boot-theme";
+        src = ./.; 
+        installPhase = ''
+          mkdir -p $out/share/plymouth/themes/castit
+          cp logo.png $out/share/plymouth/themes/castit/logo.png
+          
+          cat > $out/share/plymouth/themes/castit/castit.plymouth <<EOF
+          [Plymouth Theme]
+          Name=Castit OS
+          Description=Digital Signage Boot Theme
+          ModuleName=script
+          
+          [script]
+          ImageDir=$out/share/plymouth/themes/castit
+          ScriptFile=$out/share/plymouth/themes/castit/castit.script
+          EOF
+          
+          cat > $out/share/plymouth/themes/castit/castit.script <<EOF
+          logo_image = Image("logo.png");
+          screen_width = Window.GetWidth();
+          screen_height = Window.GetHeight();
+          logo_x = screen_width / 2 - logo_image.GetWidth() / 2;
+          logo_y = screen_height / 2 - logo_image.GetHeight() / 2;
+          sprite = Sprite(logo_image);
+          sprite.SetPosition(logo_x, logo_y, 10000);
+          Window.SetBackgroundTopColor(0, 0, 0);
+          Window.SetBackgroundBottomColor(0, 0, 0);
+          EOF
+        '';
+      })
+    ];
   };
 
   system.stateVersion = "24.11";
