@@ -1,25 +1,18 @@
 { config, pkgs, lib, ... }: {
-
-  # ==========================================
   # 1. BOOTLOADER & HARDWARE
-  # ==========================================
   networking.hostName = "castit-player";
   networking.networkmanager.enable = true; 
   time.timeZone = "Europe/Amsterdam"; 
 
-  # ==========================================
   # 2. USER & DATA
-  # ==========================================
   users.users.kiosk = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "video" "audio" ];
     initialPassword = "castit-setup"; 
   };
 
-  # ==========================================
   # 3. GRAPHICS & AUDIO
-  # ==========================================
-  hardware.graphics.enable = true; 
+  hardware.graphics.enable = true;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -27,9 +20,7 @@
   };
   security.rtkit.enable = true;
 
-  # ==========================================
   # 4. KIOSK DISPLAY
-  # ==========================================
   services.cage = {
     enable = true;
     user = "kiosk";
@@ -51,110 +42,32 @@
     in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
   };
 
-  # ==========================================
-  # 5. REMOTE ACCESS (Simplified Script)
-  # ==========================================
+  # 5. REMOTE ACCESS
   services.openssh.enable = true;
   services.tailscale.enable = true;
-
   systemd.services.tailscale-autoconnect = {
     description = "Automatic Tailscale Join";
     after = [ "network-pre.target" "tailscaled.service" ];
     wants = [ "network-pre.target" "tailscaled.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig.Type = "oneshot";
-    
-    # Simplified logic: No nested 'if' statements to break syntax
     script = ''
       sleep 5
-      
-      # 1. If we are NOT logged out (meaning we are logged in), exit immediately.
       ${pkgs.tailscale}/bin/tailscale status | grep -v "Logged out" && exit 0
-      
-      # 2. If the key file does NOT exist, exit immediately.
       [ ! -f /boot/ts-authkey ] && exit 0
-      
-      # 3. If we are here, we are logged out AND have a key. Connect.
       KEY=$(cat /boot/ts-authkey)
       ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY"
     '';
   };
 
-  # ==========================================
   # 6. AUTO UPDATER 
-  # ==========================================
   systemd.services.update-signage = {
     description = "Pull latest configuration from Git";
     path = [ pkgs.git pkgs.nixos-rebuild pkgs.nix ];
     script = ''
       mkdir -p /etc/castit-os
       cd /etc/castit-os
-      # Use || true so build doesn't fail if repo doesn't exist yet
       if [ ! -d .git ]; then
-        ${pkgs.git}/bin/git clone https://github.com/YOUR_USER/castit-os.git . || true
+        ${pkgs.git}/bin/git clone https://github.com/zrii/castit-os.git . || true
       else
         ${pkgs.git}/bin/git pull || true
-      fi
-    '';
-  };
-
-  systemd.timers.update-signage = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "10m";
-      OnUnitActiveSec = "1h";
-      Unit = "update-signage.service";
-    };
-  };
-
-  # ==========================================
-  # 7. BRANDING (Silent Boot)
-  # ==========================================
-  boot.consoleLogLevel = 0;
-  boot.initrd.verbose = false;
-  boot.kernelParams = [
-    "quiet" "splash" "boot.shell_on_fail" 
-    "loglevel=3" "rd.systemd.show_status=false" 
-    "rd.udev.log_level=3" "udev.log_priority=3"
-  ];
-
-  boot.plymouth = {
-    enable = true;
-    theme = "castit";
-    themePackages = [
-      (pkgs.stdenv.mkDerivation {
-        name = "castit-boot-theme";
-        src = ./.; 
-        installPhase = ''
-          mkdir -p $out/share/plymouth/themes/castit
-          cp logo.png $out/share/plymouth/themes/castit/logo.png
-          
-          cat > $out/share/plymouth/themes/castit/castit.plymouth <<EOF
-          [Plymouth Theme]
-          Name=Castit OS
-          Description=Digital Signage Boot Theme
-          ModuleName=script
-          
-          [script]
-          ImageDir=$out/share/plymouth/themes/castit
-          ScriptFile=$out/share/plymouth/themes/castit/castit.script
-          EOF
-          
-          cat > $out/share/plymouth/themes/castit/castit.script <<EOF
-          logo_image = Image("logo.png");
-          screen_width = Window.GetWidth();
-          screen_height = Window.GetHeight();
-          logo_x = screen_width / 2 - logo_image.GetWidth() / 2;
-          logo_y = screen_height / 2 - logo_image.GetHeight() / 2;
-          sprite = Sprite(logo_image);
-          sprite.SetPosition(logo_x, logo_y, 10000);
-          Window.SetBackgroundTopColor(0, 0, 0);
-          Window.SetBackgroundBottomColor(0, 0, 0);
-          EOF
-        '';
-      })
-    ];
-  };
-
-  system.stateVersion = "24.11";
-}
