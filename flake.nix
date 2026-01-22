@@ -3,48 +3,100 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11"; 
-    nixos-hardware.url = "github:nixos/nixos-hardware";
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixos-hardware, ... }: {
+  outputs = { self, nixpkgs, disko, ... }: {
     nixosConfigurations = {
       
-      # --- INTEL NUC PLAYER (Permanent SSD Install) ---
+      # 1. THE PLAYER CONFIGURATION (Target System)
       intel-player = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
+          disko.nixosModules.disko
           ./configuration.nix
-          # Note: hardware-configuration.nix is required for the final install
+          # Automated Partitioning
+          {
+            disko.devices.disk.main = {
+              device = "/dev/mmcblk0"; 
+              type = "disk";
+              content = {
+                type = "gpt";
+                partitions = {
+                  ESP = {
+                    size = "512M";
+                    type = "EF00";
+                    content = {
+                      type = "filesystem";
+                      format = "vfat";
+                      mountpoint = "/boot";
+                    };
+                  };
+                  root = {
+                    size = "100%";
+                    content = {
+                      type = "filesystem";
+                      format = "ext4";
+                      mountpoint = "/";
+                    };
+                  };
+                };
+              };
+            };
+          }
           ({ pkgs, ... }: {
-            boot.loader.grub.enable = false;
             boot.loader.systemd-boot.enable = true;
             boot.loader.efi.canTouchEfiVariables = true;
-            services.xserver.videoDrivers = [ "modesetting" ];
           })
         ];
       };
 
-      # --- GRAPHICAL INSTALLER (The Flash Drive) ---
+      # 2. THE INSTALLER ISO (Automation Tool)
       installer = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, ... }: {
-            # Extra tools for the live environment
-            environment.systemPackages = [ pkgs.git pkgs.vim ];
-          })
-        ];
-      };
+            # Bake config files into the ISO
+            environment.etc."nixos-config".source = ./.;
+            
+            # The Automated Script with Countdown
+            environment.systemPackages = [
+              (pkgs.writeShellScriptBin "auto-install" ''
+                set -e
+                echo "--- STARTING CASTIT AUTOMATED INSTALL ---"
+                
+                # 1. Partition & Mount (Disko)
+                echo ">>> Wiping and Partitioning /dev/mmcblk0..."
+                sudo nix --experimental-features "nix-command flakes" \
+                  run github:nix-community/disko -- --mode disko --flake /etc/nixos-config#intel-player
 
-      # --- RASPBERRY PI PLAYER ---
-      rpi-player = nixpkgs.lib.nixosSystem {
-        system = "aarch64-linux";
-        modules = [
-          nixos-hardware.nixosModules.raspberry-pi-4
-          ./configuration.nix
-          ({ pkgs, ... }: {
-            boot.loader.grub.enable = false;
-            boot.loader.generic-extlinux-compatible.enable = true;
+                # 2. Generate Hardware Config
+                echo ">>> Generating Hardware ID..."
+                sudo nixos-generate-config --no-filesystems --root /mnt
+
+                # 3. Install
+                echo ">>> Installing OS..."
+                sudo nixos-install --flake /etc/nixos-config#intel-player --no-root-passwd
+                
+                # 4. Success & Countdown
+                echo "====================================================="
+                echo "   INSTALLATION SUCCESSFUL"
+                echo "====================================================="
+                echo "Please REMOVE the USB drive now."
+                echo "The system will POWER OFF automatically in 20 seconds."
+                echo "====================================================="
+                
+                for i in {20..1}; do
+                  echo -ne "Powering off in $i... \r"
+                  sleep 1
+                done
+                
+                echo "Goodnight!"
+                poweroff
+              '')
+            ];
           })
         ];
       };
