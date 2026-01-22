@@ -10,46 +10,41 @@
     nixosConfigurations = {
       
       # 1. THE ACTUAL PLAYER (Target for the SSD)
-      # This is what you install ONTO the NUC's internal drive.
       intel-player = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           ./configuration.nix
-          # Import the hardware config generated during installation
+          # This will be created on the NUC later
           ./hardware-configuration.nix 
           ({ pkgs, ... }: {
-            boot.loader.systemd-boot.enable = true; [cite: 34]
-            boot.loader.efi.canTouchEfiVariables = true; [cite: 34]
-            services.xserver.videoDrivers = [ "modesetting" ]; [cite: 34, 35]
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
+            services.xserver.videoDrivers = [ "modesetting" ];
           })
         ];
       };
 
       # 2. THE GRAPHICAL INSTALLER (The Flash Drive)
-      # This builds the ISO you boot from in WSL.
       installer = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
-          # Provides the GNOME graphical installer environment
-          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix" [cite: 32]
-          
-          # This ensures your signage config files are available on the Live USB
+          # Standard graphical installer module
+          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, ... }: {
             environment.systemPackages = [ pkgs.git pkgs.vim ];
-            # Optional: Pre-configure networking or SSH for the installer if needed
           })
         ];
       };
 
-      # --- RASPBERRY PI PLAYER ---
+      # 3. RASPBERRY PI PLAYER
       rpi-player = nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
         modules = [
-          nixos-hardware.nixosModules.raspberry-pi-4 [cite: 37]
-          ./configuration.nix [cite: 37]
+          nixos-hardware.nixosModules.raspberry-pi-4
+          ./configuration.nix
           ({ pkgs, ... }: {
-            boot.loader.grub.enable = false; [cite: 37]
-            boot.loader.generic-extlinux-compatible.enable = true; [cite: 37]
+            boot.loader.grub.enable = false;
+            boot.loader.generic-extlinux-compatible.enable = true;
           })
         ];
       };
