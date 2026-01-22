@@ -52,48 +52,59 @@
         ];
       };
 
-      # 2. THE INSTALLER ISO (Automation Tool)
+      # 2. THE INSTALLER ISO (With Crash Fixes)
       installer = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, ... }: {
-            # Bake config files into the ISO
             environment.etc."nixos-config".source = ./.;
             
-            # The Automated Script with Countdown
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "auto-install" ''
                 set -e
-                echo "--- STARTING CASTIT AUTOMATED INSTALL ---"
+                echo "--- STARTING CASTIT AUTOMATED INSTALL (SAFE MODE) ---"
                 
-                # 1. Partition & Mount (Disko)
-                echo ">>> Wiping and Partitioning /dev/mmcblk0..."
+                # 1. Partition & Format
+                echo ">>> [1/5] Partitioning Drive..."
                 sudo nix --experimental-features "nix-command flakes" \
                   run github:nix-community/disko -- --mode disko --flake /etc/nixos-config#intel-player
 
-                # 2. Generate Hardware Config
-                echo ">>> Generating Hardware ID..."
+                # 2. CREATE SWAP (CRITICAL FIX FOR CRASHES)
+                # We use the newly formatted SSD to extend RAM so the installer doesn't die.
+                echo ">>> [2/5] Creating 4GB Swap File to prevent RAM crash..."
+                sudo fallocate -l 4G /mnt/swapfile
+                sudo chmod 600 /mnt/swapfile
+                sudo mkswap /mnt/swapfile
+                sudo swapon /mnt/swapfile
+                
+                # 3. Hardware Config
+                echo ">>> [3/5] Generating Hardware Config..."
                 sudo nixos-generate-config --no-filesystems --root /mnt
 
-                # 3. Install
-                echo ">>> Installing OS..."
-                sudo nixos-install --flake /etc/nixos-config#intel-player --no-root-passwd
+                # 4. Install (With diverted TMPDIR)
+                echo ">>> [4/5] Installing OS (This may take time)..."
+                # We tell Nix to use the disk for temporary files, not RAM
+                export TMPDIR=/mnt/tmp
+                mkdir -p $TMPDIR
+                sudo -E nixos-install --flake /etc/nixos-config#intel-player --no-root-passwd
                 
-                # 4. Success & Countdown
+                # 5. Cleanup & Countdown
                 echo "====================================================="
                 echo "   INSTALLATION SUCCESSFUL"
                 echo "====================================================="
                 echo "Please REMOVE the USB drive now."
-                echo "The system will POWER OFF automatically in 20 seconds."
+                echo "System will Power Off in 20 seconds."
                 echo "====================================================="
+                
+                # Turn off swap before finishing to be safe
+                sudo swapoff /mnt/swapfile || true
                 
                 for i in {20..1}; do
                   echo -ne "Powering off in $i... \r"
                   sleep 1
                 done
                 
-                echo "Goodnight!"
                 poweroff
               '')
             ];
