@@ -121,6 +121,7 @@
             systemd.services.auto-installer = {
               description = "Automated Castit OS Installer";
               after = [ "getty.target" ];
+              conflicts = [ "getty@tty1.service" ];
               wantedBy = [ "multi-user.target" ];
               serviceConfig = {
                 Type = "simple";
@@ -131,6 +132,10 @@
                 ExecStart = "/run/current-system/sw/bin/auto-install";
               };
             };
+
+            # Disable the default getty on tty1 to allow the installer to take over
+            systemd.services."getty@tty1".enable = false;
+            systemd.services."autovt@tty1".enable = false;
           })
         ];
       };
