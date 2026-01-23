@@ -79,9 +79,9 @@
       if [ ! -d .git ]; then
         ${pkgs.git}/bin/git clone https://github.com/zrii/castit-os.git .
       else
-        # We force reset to match origin/main exactly (discarding local manual changes)
+        # We force reset to match origin/live exactly (discarding local manual changes)
         ${pkgs.git}/bin/git fetch origin
-        ${pkgs.git}/bin/git reset --hard origin/main
+        ${pkgs.git}/bin/git reset --hard origin/live
       fi
 
       # 3. Apply the Configuration

@@ -18,7 +18,7 @@ The device checks for updates every **10 minutes** after boot, and then every **
 ### How it works:
 1.  The `update-signage` service runs automatically.
 2.  It pulls the latest code from `https://github.com/zrii/castit-os`.
-3.  It performs a **hard reset** to match the `main` branch (overwriting local changes).
+3.  It performs a **hard reset** to match the `live` branch (overwriting local changes).
 4.  It runs `nixos-rebuild switch` to apply the new configuration.
 
 ### Triggering a Manual Update
