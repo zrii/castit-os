@@ -31,7 +31,29 @@ To build the ISO:
 nix build .#installer --impure
 ```
 
-The resulting ISO will be linked in the `result` symlink in the current directory. Flash this ISO to a USB drive using a tool like `dd` or BalenaEtcher.
+The resulting ISO will be linked in the `result` symlink in the current directory.
+
+#### Flash to USB
+
+You can use several methods to burn this ISO to a USB drive on Linux:
+
+**Method A: Command Line (`dd`) - Recommended for speed**
+1. Insert your USB drive.
+2. Identify the device path (e.g., `/dev/sdX`) using `lsblk`.
+3. Run the following command (replace `/dev/sdX` with your actual device):
+   ```bash
+   sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync
+   ```
+
+**Method B: GUI - BalenaEtcher (Similar to Rufus)**
+If you prefer a Windows-like GUI experience:
+1. Download [BalenaEtcher](https://www.balena.io/etcher/).
+2. Select the ISO from the `result/iso/` folder.
+3. Select your USB drive and click **Flash**.
+
+**Method C: Ventoy (Experimental but powerful)**
+If you use [Ventoy](https://www.ventoy.net/), simply copy the `.iso` file from `result/iso/` onto your Ventoy USB stick.
+
 
 ### 2. Install on Device
 
