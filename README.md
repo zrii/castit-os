@@ -55,6 +55,16 @@ If you prefer a Windows-like GUI experience:
 If you use [Ventoy](https://www.ventoy.net/), simply copy the `.iso` file from `result/iso/` onto your Ventoy USB stick.
 
 
+#### Verify the Flash
+
+After the `dd` command finishes, you can verify the USB partitions by running:
+```bash
+lsblk /dev/sdX
+```
+You should see at least two partitions (one for the main OS and one for the EFI boot). On many Linux systems, the main partition will automatically mount as "nixos-gnome...".
+
+For a detailed step-by-step guide on the flashing process, see [flashing-walkthrough.md](file:///home/zri/Projects/castit-os/docs/flashing-walkthrough.md).
+
 ### 2. Install on Device
 
 1.  Boot the target device from the USB drive.
