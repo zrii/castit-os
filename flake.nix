@@ -72,15 +72,15 @@
 
                 # 5. Install (Redirecting temp files to disk)
                 echo ">>> [5/5] Installing OS..."
+                sudo mkdir -p /mnt/tmp
                 export TMPDIR=/mnt/tmp
-                mkdir -p $TMPDIR
+
+                sudo cp /etc/nixos-config/flake.nix /mnt/etc/nixos/
+                sudo cp /etc/nixos-config/configuration.nix /mnt/etc/nixos/
+                sudo cp /etc/nixos-config/logo.png /mnt/etc/nixos/
                 
                 # We point to the baked-in config files inside /etc/nixos-config
-                sudo -E nixos-install \
-                  --flake /etc/nixos-config#intel-player \
-                  --no-root-passwd \
-                  --option cores 1 \
-                  --option max-jobs 1
+                sudo -E nixos-install --flake /mnt/etc/nixos#intel-player --no-root-passwd --option cores 1 --option max-jobs 1 --impure
                 
                 echo "------------------------------------------------"
                 echo "SUCCESS! Remove USB. Powering off in 10 seconds."
