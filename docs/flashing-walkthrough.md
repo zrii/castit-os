@@ -22,14 +22,21 @@ Look for a device with `TYPE="disk"` and `TRAN="usb"`. For example, `/dev/sdb`.
     -   Ubuntu/Debian: `sudo apt install bmap-tools`
     -   Fedora: `sudo dnf install bmap-tools`
     -   Nix: `nix-shell -p bmap-tools`
-2.  **Flash**:
+2.  **Unmount the drive (if needed)**:
+    If the device is busy or automatically mounted by your system, unmount it first:
     ```bash
-    sudo bmaptool copy result/iso/castit-*.iso /dev/sdb
+    udisksctl unmount -b /dev/sdb1
     ```
+3.  **Flash**:
+    ```bash
+    sudo bmaptool copy --nobmap result/iso/castit-24.11.20250630.50ab793-x86_64-linux.iso /dev/sdb
+    ```
+    > [!TIP]
+    > Use `--nobmap` if you haven't generated a `.bmap` file for the ISO.
 
 ### Method B: dd (Standard)
 
-Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdX` with your actual device path:
+Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdb` with your actual device path:
 
 ```bash
 sudo dd if=result/iso/castit-24.11.20250630.50ab793-x86_64-linux.iso of=/dev/sdb bs=4M status=progress conv=fsync
