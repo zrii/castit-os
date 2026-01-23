@@ -7,7 +7,7 @@
   # 2. USER & DATA
   users.users.kiosk = {
     isNormalUser = true;
-    extraGroups = [ "networkmanager" "video" "audio" ];
+    extraGroups = [ "networkmanager" "video" "audio" "wheel" ];
     initialPassword = "castit-setup"; 
   };
 
