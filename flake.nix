@@ -36,6 +36,8 @@
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, ... }: {
+            system.nixos.distroName = "Castit OS";
+            system.nixos.distroId = "castit";
             
             # Embed the config files into the ISO so we don't need Git
             environment.etc."nixos-config/flake.nix".source = ./flake.nix;
@@ -49,7 +51,7 @@
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "auto-install" ''
                 set -e
-                echo "--- STARTING CASTIT AUTOMATED INSTALL (LOW RAM MODE) ---"
+                echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"
                 
                 # 1. Manual Partitioning (Uses less RAM than Disko)
                 echo ">>> [1/5] Partitioning /dev/mmcblk0..."
@@ -61,7 +63,7 @@
                 # 2. Format
                 echo ">>> [2/5] Formatting..."
                 sudo mkfs.fat -F 32 -n boot /dev/mmcblk0p1
-                sudo mkfs.ext4 -L nixos -F /dev/mmcblk0p2
+                sudo mkfs.ext4 -L castit-os -F /dev/mmcblk0p2
 
                 # 3. MOUNT & ENABLE SWAP (The Fix for Crashing)
                 echo ">>> [3/5] Enabling Swap to prevent crash..."

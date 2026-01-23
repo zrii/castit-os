@@ -1,6 +1,6 @@
-# Walkthrough: Burning NixOS ISO on Linux
+# Walkthrough: Burning Castit OS ISO on Linux
 
-This guide walks through the process of burning the Castit OS NixOS ISO image to a USB drive on a Linux system.
+This guide walks through the process of burning the Castit OS ISO image to a USB drive on a Linux system.
 
 ## 1. Locate the ISO
 The built ISO image is located in the `result` directory after building:
@@ -33,7 +33,7 @@ After `dd` completes, verify the partition table on the USB:
 lsblk /dev/sdX
 ```
 You should see at least two partitions:
-1. A large partition (the NixOS system).
+1. A large partition (the Castit OS system).
 2. A small EFI partition.
 
 ## 5. Next Steps

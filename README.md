@@ -61,7 +61,7 @@ After the `dd` command finishes, you can verify the USB partitions by running:
 ```bash
 lsblk /dev/sdX
 ```
-You should see at least two partitions (one for the main OS and one for the EFI boot). On many Linux systems, the main partition will automatically mount as "nixos-gnome...".
+You should see at least two partitions (one for the main OS and one for the EFI boot). On many Linux systems, the main partition will automatically mount as "castit-os".
 
 For a detailed step-by-step guide on the flashing process, see [flashing-walkthrough.md](file:///home/zri/Projects/castit-os/docs/flashing-walkthrough.md).
 
@@ -79,7 +79,7 @@ This script will:
 -   Partition the internal drive (`/dev/mmcblk0` by default - **verify your drive identifier!**).
 -   Format partitions and set up Swap.
 -   Generate a hardware configuration.
--   Install the `intel-player` NixOS configuration.
+-   Install the `intel-player` configuration.
 -   Power off the device upon success.
 
 > **Warning**: The `auto-install` script is currently hardcoded for `/dev/mmcblk0`. If you are installing on a SATA SSD or NVMe drive, you may need to modify the script in `flake.nix` to target `/dev/sda` or `/dev/nvme0n1`.

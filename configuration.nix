@@ -129,5 +129,9 @@
     ];
   };
 
+  # 8. REBRANDING
+  system.nixos.distroName = "Castit OS";
+  system.nixos.distroId = "castit";
+
   system.stateVersion = "24.11";
 }
