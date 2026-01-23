@@ -17,7 +17,7 @@ Look for a device with `TYPE="disk"` and `TRAN="usb"`. For example, `/dev/sdb`.
 Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdX` with your actual device path:
 
 ```bash
-sudo dd if=result/iso/castit-*.iso of=/dev/sdX bs=4M status=progress conv=fsync
+sudo dd if=result/iso/castit-*.iso of=/dev/sdb bs=4M status=progress conv=fsync
 ```
 
 ### Command Breakdown:
@@ -30,7 +30,7 @@ sudo dd if=result/iso/castit-*.iso of=/dev/sdX bs=4M status=progress conv=fsync
 ## 4. Verify the Flash
 After `dd` completes, verify the partition table on the USB:
 ```bash
-lsblk /dev/sdX
+lsblk /dev/sdb
 ```
 You should see at least two partitions:
 1. A large partition (the Castit OS system).

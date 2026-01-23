@@ -23,7 +23,7 @@
 
 ### 1. Create the Installer
 
-The project defines an `installer` output in `flake.nix` which builds a bootable ISO image containing the automated installation script.
+The project defines an `installer` output in `flake.nix` which builds a bootable ISO image containing the automated installation script. We use a **Minimal Installer** base to ensure builds are fast and the image is small.
 
 To build the ISO:
 
@@ -98,6 +98,16 @@ The installation medium configuration.
 
 -   **Tailscale**: The system attempts to auto-join a Tailscale network if a key is provided in `/boot/ts-authkey` or if pre-authenticated.
 -   **Updates**: A systemd timer (`update-signage`) runs every hour (and 10m after boot) to check this repository for changes. If changes are found, it pulls them and runs `nixos-rebuild switch`.
+
+## Efficient Development Workflow
+
+You don't need to rebuild the ISO every time you change the configuration.
+
+1.  **Install Once**: Build the ISO and install it on the device one time.
+2.  **Push to Update**: For all future changes (updating the URL, changing kiosk flags, adding packages):
+    -   Commit and push your changes to the `live` branch of this repository.
+    -   The devices will automatically detect the changes, pull them, and apply them within an hour.
+    -   **Manual Trigger**: If you want to apply changes immediately, SSH into the device and run: `sudo systemctl start update-signage.service`.
 
 ## Customization
 
