@@ -1,0 +1,17 @@
+# Nix build artifacts
+result
+result-*
+
+# Environment management
+.direnv/
+.envrc
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated ISO images
+*.iso

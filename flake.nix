@@ -6,6 +6,11 @@
   };
 
   outputs = { self, nixpkgs, ... }: {
+    packages.x86_64-linux = {
+      installer = self.nixosConfigurations.installer.config.system.build.isoImage;
+      default = self.packages.x86_64-linux.installer;
+    };
+
     nixosConfigurations = {
       
       # ==========================================

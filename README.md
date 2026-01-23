@@ -11,6 +11,14 @@
 -   **Silent Boot**: Custom Plymouth theme ("logo.png") for a professional, branded boot experience.
 -   **Resilience**: Configured with swap and specific boot parameters to ensure stability on constrained hardware.
 
+## Prerequisites
+
+-   **Nix with Flakes**: Ensure you have Nix installed with the `nix-command` and `flakes` experimental features enabled. You can enable them by adding the following to your `~/.config/nix/nix.conf`:
+    ```text
+    experimental-features = nix-command flakes
+    ```
+-   **Architecture**: This configuration is designed for `x86_64-linux` hardware.
+
 ## Installation
 
 ### 1. Create the Installer
@@ -20,10 +28,10 @@ The project defines an `installer` output in `flake.nix` which builds a bootable
 To build the ISO:
 
 ```bash
-nix build .#installer
+nix build .#installer --impure
 ```
 
-The resulting ISO will be linked in the `result/iso/` directory. Flash this ISO to a USB drive using a tool like `dd` or BalenaEtcher.
+The resulting ISO will be linked in the `result` symlink in the current directory. Flash this ISO to a USB drive using a tool like `dd` or BalenaEtcher.
 
 ### 2. Install on Device
 
