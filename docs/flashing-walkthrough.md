@@ -14,6 +14,21 @@ lsblk -p -o NAME,SIZE,MODEL,TYPE,TRAN | grep -v "loop"
 Look for a device with `TYPE="disk"` and `TRAN="usb"`. For example, `/dev/sdb`.
 
 ## 3. Burn the ISO (CLI Method)
+### Method A: bmaptool (Expert Shortcut - Fastest)
+
+`bmaptool` is significantly faster than `dd` because it only writes the actual data blocks, skipping the empty space in the ISO image.
+
+1.  **Install bmaptool**:
+    -   Ubuntu/Debian: `sudo apt install bmap-tools`
+    -   Fedora: `sudo dnf install bmap-tools`
+    -   Nix: `nix-shell -p bmap-tools`
+2.  **Flash**:
+    ```bash
+    sudo bmaptool copy result/iso/castit-*.iso /dev/sdb
+    ```
+
+### Method B: dd (Standard)
+
 Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdX` with your actual device path:
 
 ```bash

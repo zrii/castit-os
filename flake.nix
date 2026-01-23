@@ -40,6 +40,9 @@
           ({ pkgs, lib, ... }: {
             system.nixos.distroName = "Castit OS";
             system.nixos.distroId = "castit";
+            
+            # FAST BUILD: Use Zstd instead of XZ for the squashfs
+            isoImage.squashfsCompression = "zstd -Xcompression-level 3";
 
             # Hide the bootloader menu entirely
             boot.loader.timeout = lib.mkForce 0;
@@ -55,19 +58,14 @@
 
             # The "Low Memory" Automation Script
             environment.systemPackages = [
+              pkgs.sudo
               (pkgs.writeShellScriptBin "auto-install" ''
                 set -e
-                echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"
+                echo "--- CASTIT OS DIGITAL SIGNAGE INSTALLER ---"
                 
                 echo "!!! WARNING: THIS WILL WIPE /dev/mmcblk0 !!!"
-                echo "You have 20 seconds to cancel by pressing any key..."
-                
-                if read -t 20 -n 1; then
-                  echo -e "\nInstallation cancelled. Entering manual shell."
-                  exit 0
-                fi
-
-                echo -e "\nProceeding with installation..."
+                read -n 1 -s -r -p "Press any key to START the installation..."
+                echo -e "\n\nProceeding with installation..."
 
                 # 1. Manual Partitioning (Uses less RAM than Disko)
                 echo ">>> [1/5] Partitioning /dev/mmcblk0..."

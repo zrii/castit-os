@@ -37,7 +37,15 @@ The resulting ISO will be linked in the `result` symlink in the current director
 
 You can use several methods to burn this ISO to a USB drive on Linux:
 
-**Method A: Command Line (`dd`) - Recommended for speed**
+**Method A: Fast Flashing (`bmaptool`) - EXPERT SHORTCUT**
+1. Install `bmaptool` (e.g., `sudo apt install bmap-tools` or `nix-shell -p bmap-tools`).
+2. Run (replace `/dev/sdX` with your device):
+   ```bash
+   sudo bmaptool copy result/iso/castit-*.iso /dev/sdX
+   ```
+   *Why it's fast:* It skips writing empty blocks, often cutting flash time in half.
+
+**Method B: Command Line (`dd`) - Standard**
 1. Insert your USB drive.
 2. Identify the device path (e.g., `/dev/sdX`) using `lsblk`.
 3. Run the following command (replace `/dev/sdX` with your actual device):
