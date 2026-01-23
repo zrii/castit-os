@@ -21,8 +21,10 @@
         modules = [
           ./configuration.nix
           ./hardware-configuration.nix # This is generated on the device during install
-          ({ pkgs, ... }: {
+          ({ pkgs, lib, ... }: {
             boot.loader.systemd-boot.enable = true;
+            boot.loader.systemd-boot.editor = false;
+            boot.loader.timeout = lib.mkForce 0;
             boot.loader.efi.canTouchEfiVariables = true;
           })
         ];
@@ -35,9 +37,13 @@
         system = "x86_64-linux";
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
-          ({ pkgs, ... }: {
+          ({ pkgs, lib, ... }: {
             system.nixos.distroName = "Castit OS";
             system.nixos.distroId = "castit";
+
+            # Hide the bootloader menu entirely
+            boot.loader.timeout = lib.mkForce 0;
+            boot.loader.systemd-boot.editor = false;
             
             # Embed the config files into the ISO so we don't need Git
             environment.etc."nixos-config/flake.nix".source = ./flake.nix;
@@ -53,6 +59,16 @@
                 set -e
                 echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"
                 
+                echo "!!! WARNING: THIS WILL WIPE /dev/mmcblk0 !!!"
+                echo "You have 20 seconds to cancel by pressing any key..."
+                
+                if read -t 20 -n 1; then
+                  echo -e "\nInstallation cancelled. Entering manual shell."
+                  exit 0
+                fi
+
+                echo -e "\nProceeding with installation..."
+
                 # 1. Manual Partitioning (Uses less RAM than Disko)
                 echo ">>> [1/5] Partitioning /dev/mmcblk0..."
                 sudo parted -s /dev/mmcblk0 mklabel gpt
@@ -100,6 +116,21 @@
                 poweroff
               '')
             ];
+
+            # Zero-Touch Automation Service
+            systemd.services.auto-installer = {
+              description = "Automated Castit OS Installer";
+              after = [ "getty.target" ];
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig = {
+                Type = "simple";
+                StandardInput = "tty";
+                StandardOutput = "tty";
+                StandardError = "tty";
+                TTYPath = "/dev/tty1";
+                ExecStart = "/run/current-system/sw/bin/auto-install";
+              };
+            };
           })
         ];
       };
