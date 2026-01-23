@@ -42,6 +42,9 @@
             environment.etc."nixos-config/configuration.nix".source = ./configuration.nix;
             environment.etc."nixos-config/logo.png".source = ./logo.png;
 
+            # Added compatibility modules for Stage 1 boot
+            boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];
+
             # The "Low Memory" Automation Script
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "auto-install" ''
