@@ -17,7 +17,7 @@ Look for a device with `TYPE="disk"` and `TRAN="usb"`. For example, `/dev/sdb`.
 Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdX` with your actual device path:
 
 ```bash
-sudo dd if=result/iso/castit-*.iso of=/dev/sdb bs=4M status=progress conv=fsync
+sudo dd if=result/iso/castit-24.11.20250630.50ab793-x86_64-linux.iso of=/dev/sdb bs=4M status=progress conv=fsync
 ```
 
 ### Command Breakdown:
