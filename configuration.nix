@@ -24,6 +24,9 @@
   services.cage = {
     enable = true;
     user = "kiosk";
+    environment = {
+      XCURSOR_SIZE = "0";
+    };
     program = let
       chromium-flags = [
         "--kiosk"
