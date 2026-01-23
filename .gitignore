@@ -1,6 +1,6 @@
 # Nix build artifacts
 ./result
-./result-*
+./result/*
 
 # Environment management
 .direnv/
