@@ -62,17 +62,35 @@
 
   # 6. AUTO UPDATER 
   systemd.services.update-signage = {
-    description = "Pull latest configuration from Git";
+    description = "Pull latest configuration from Git and Apply";
     path = [ pkgs.git pkgs.nixos-rebuild pkgs.nix ];
     script = ''
+      # 0. Safety Check
+      echo "Starting Auto-Update as user: $(whoami)"
+
+      # 1. Prepare Directory
       mkdir -p /etc/castit-os
       cd /etc/castit-os
+
+      # 2. Clone or Reset
       if [ ! -d .git ]; then
-        ${pkgs.git}/bin/git clone https://github.com/zrii/castit-os.git . || true
+        ${pkgs.git}/bin/git clone https://github.com/zrii/castit-os.git .
       else
-        ${pkgs.git}/bin/git pull || true
+        # We force reset to match origin/main exactly (discarding local manual changes)
+        ${pkgs.git}/bin/git fetch origin
+        ${pkgs.git}/bin/git reset --hard origin/main
       fi
+
+      # 3. Apply the Configuration
+      # We skip this if nothing changed? Ideally yes, but for now we just try to apply.
+      # NixOS is idempotent so it's fine to run even if no changes.
+      echo "Applying configuration..."
+      ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake .#intel-player --impure
     '';
+    serviceConfig = {
+      Type = "oneshot";
+      User = "root";
+    };
   };
   systemd.timers.update-signage = {
     wantedBy = [ "timers.target" ];

@@ -31,7 +31,7 @@ To build the ISO:
 nix build .#installer --impure
 ```
 
-The resulting ISO will be linked in the `result` symlink in the current directory.
+The resulting ISO will be linked in the `result` symlink in the current directory. This is now a **Zero-Touch Installer**.
 
 #### Flash to USB
 
@@ -42,18 +42,17 @@ You can use several methods to burn this ISO to a USB drive on Linux:
 2. Identify the device path (e.g., `/dev/sdX`) using `lsblk`.
 3. Run the following command (replace `/dev/sdX` with your actual device):
    ```bash
-   sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync
+   sudo dd if=result/iso/castit-*.iso of=/dev/sdX bs=4M status=progress conv=fsync
    ```
 
 **Method B: GUI - BalenaEtcher (Similar to Rufus)**
 If you prefer a Windows-like GUI experience:
 1. Download [BalenaEtcher](https://www.balena.io/etcher/).
-2. Select the ISO from the `result/iso/` folder.
+2. Select the `castit-*.iso` from the `result/iso/` folder.
 3. Select your USB drive and click **Flash**.
 
 **Method C: Ventoy (Experimental but powerful)**
-If you use [Ventoy](https://www.ventoy.net/), simply copy the `.iso` file from `result/iso/` onto your Ventoy USB stick.
-
+If you use [Ventoy](https://www.ventoy.net/), simply copy the `castit-*.iso` file from `result/iso/` onto your Ventoy USB stick.
 
 #### Verify the Flash
 
@@ -68,19 +67,14 @@ For a detailed step-by-step guide on the flashing process, see [flashing-walkthr
 ### 2. Install on Device
 
 1.  Boot the target device from the USB drive.
-2.  Once booted, login is automatic (or use credentials if prompted, though the script handles most things).
-3.  Run the automated installer command:
-
-```bash
-auto-install
-```
-
-This script will:
--   Partition the internal drive (`/dev/mmcblk0` by default - **verify your drive identifier!**).
--   Format partitions and set up Swap.
--   Generate a hardware configuration.
--   Install the `intel-player` configuration.
--   Power off the device upon success.
+2.  **Zero-Touch Automation**: The system will automatically skip the bootloader menu and start the `auto-install` script.
+3.  **Safety Countdown**: A 20-second countdown will appear. To cancel the automatic install and enter a manual shell, press any key.
+4.  If no key is pressed, the script will:
+    -   Partition the internal drive (`/dev/mmcblk0` by default - **verify your drive identifier!**).
+    -   Format partitions and set up Swap.
+    -   Generate a hardware configuration.
+    -   Install the `intel-player` configuration with a **hidden bootloader menu**.
+    -   Power off the device upon success.
 
 > **Warning**: The `auto-install` script is currently hardcoded for `/dev/mmcblk0`. If you are installing on a SATA SSD or NVMe drive, you may need to modify the script in `flake.nix` to target `/dev/sda` or `/dev/nvme0n1`.
 
@@ -109,3 +103,4 @@ The installation medium configuration.
 
 -   **URL**: Change `Castit-url` in `configuration.nix` to point to a different player URL.
 -   **Logo**: Replace `logo.png` to change the boot splash screen.
+- [Remote Management Guide](docs/remote-management.md)

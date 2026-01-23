@@ -4,7 +4,7 @@ This guide walks through the process of burning the Castit OS ISO image to a USB
 
 ## 1. Locate the ISO
 The built ISO image is located in the `result` directory after building:
-`result/iso/nixos-24.11.20250630.50ab793-x86_64-linux.iso`
+`result/iso/castit-24.11.20250630.50ab793-x86_64-linux.iso`
 
 ## 2. Identify the USB Drive
 Before flashing, you must identify the correct device path for your USB drive. Run:
@@ -17,7 +17,7 @@ Look for a device with `TYPE="disk"` and `TRAN="usb"`. For example, `/dev/sdb`.
 Use the `dd` command to copy the image to the USB drive. Replacing `/dev/sdX` with your actual device path:
 
 ```bash
-sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync
+sudo dd if=result/iso/castit-*.iso of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
 ### Command Breakdown:
@@ -40,4 +40,5 @@ You should see at least two partitions:
 1. Safely unplug the USB drive.
 2. Plug it into the target Intel player hardware.
 3. Boot from the USB.
-4. Run `auto-install` to begin the automated setup.
+4. **Zero-Touch**: The system will automatically skip the boot menu and start the installer.
+5. **Safety**: Wait for the 20-second countdown (or press a key to cancel if needed).
