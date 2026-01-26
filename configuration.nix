@@ -99,6 +99,10 @@
       # 3. Apply the Configuration
       echo "Applying configuration..."
       ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake .#intel-player --impure
+
+      # 4. Restart the kiosk display
+      echo "Restarting kiosk..."
+      systemctl restart cage-tty1
     '';
     serviceConfig = {
       Type = "oneshot";
