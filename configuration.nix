@@ -44,9 +44,13 @@
         "--ignore-gpu-blocklist"
         "--enable-gpu-rasterization"
         "--enable-zero-copy"
-        "--disable-gpu" 
-        "--disable-software-rasterizer"
         "--remote-debugging-port=9222"
+        "--check-for-update-interval=31536000"
+        "--disable-hang-monitor"
+        "--enable-logging=stderr --v=1"
+        "--remote-allow-origins=*"
+        "--disable-pinch"
+        "--overscroll-history-navigation=0"        
       ];
       castit-url = "https://app.castit.nl/player/webPlayer";
     in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
@@ -89,17 +93,10 @@
         # We force reset to match origin/live exactly (discarding local manual changes)
         ${pkgs.git}/bin/git fetch origin
         ${pkgs.git}/bin/git reset --hard origin/live
-      fi
-
-      # 2.1 Copy Hardware Configuration
-      # We need the hardware config that was generated during install, otherwise the flake won't build.
-      if [ -f /etc/nixos/hardware-configuration.nix ]; then
         cp /etc/nixos/hardware-configuration.nix .
       fi
 
-      # 3. Apply the Configuration
-      # We skip this if nothing changed? Ideally yes, but for now we just try to apply.
-      # NixOS is idempotent so it's fine to run even if no changes.
+      #3. Apply the Configuration
       echo "Applying configuration..."
       ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake .#intel-player --impure
     '';
@@ -111,7 +108,7 @@
   systemd.timers.update-signage = {
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnBootSec = "10m";
+      OnBootSec = "2m";
       OnUnitActiveSec = "1h";
       Unit = "update-signage.service";
     };
