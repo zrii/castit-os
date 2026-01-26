@@ -1,0 +1,3 @@
+Idea - SVI playeri da instaliraju skripte
+Da idu i da dodaju SSHpa preko njega mozemo da debugujemo i console
+i severali to da bude prvo -d a isprobam ono sto dodaje SSH ne znam kako because
