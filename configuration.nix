@@ -50,6 +50,7 @@
         "--enable-logging=stderr --v=1"
         "--remote-allow-origins=*"
         "--disable-pinch"
+        "--unlimited-storage"
         "--overscroll-history-navigation=0"        
       ];
       castit-url = "https://app.castit.nl/player/webPlayer";
