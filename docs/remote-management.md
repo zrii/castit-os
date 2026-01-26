@@ -13,7 +13,7 @@ All Castit OS devices come with **Tailscale** pre-installed and enabled. This al
     *(Note: Default user is `kiosk` which has no password, but SSH usually requires a key or configured user. You may need to configure an authorized key in `configuration.nix` if you want direct SSH access, or just use Tailscale's "MagicDNS" features if configured.)*
 
 ## 2. Automatic Updates
-The device checks for updates every **10 minutes** after boot, and then every **1 hour**.
+The device checks for updates **2 minutes** after boot, and then every **1 hour**.
 
 ### How it works:
 1.  The `update-signage` service runs automatically.
