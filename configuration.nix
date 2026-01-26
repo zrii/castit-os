@@ -40,6 +40,9 @@
         "--ignore-gpu-blocklist"
         "--enable-gpu-rasterization"
         "--enable-zero-copy"
+        "--disable-gpu" 
+        "--disable-software-rasterizer"
+        "--remote-debugging-port=9222"
       ];
       castit-url = "https://app.castit.nl/player/webPlayer";
     in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
