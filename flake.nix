@@ -57,16 +57,8 @@
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "auto-install" ''
                 set -e
-                echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"
-                
+                echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"                
                 echo "!!! WARNING: THIS WILL WIPE /dev/mmcblk0 !!!"
-                echo "You have 20 seconds to cancel by pressing any key..."
-                
-                if read -t 20 -n 1; then
-                  echo -e "\nInstallation cancelled. Entering manual shell."
-                  exit 0
-                fi
-
                 echo -e "\nProceeding with installation..."
 
                 # 1. Manual Partitioning (Uses less RAM than Disko)
