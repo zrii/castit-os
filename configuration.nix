@@ -11,6 +11,8 @@
     initialPassword = "castit-setup"; 
   };
 
+  environment.systemPackages = [ pkgs.git ];
+
   # 3. GRAPHICS & AUDIO
   hardware.graphics.enable = true;
   services.pipewire = {
