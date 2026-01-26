@@ -13,6 +13,8 @@
 
   environment.systemPackages = [ pkgs.git ];
 
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   # 3. GRAPHICS & AUDIO
   hardware.graphics.enable = true;
   services.pipewire = {
@@ -87,6 +89,12 @@
         # We force reset to match origin/live exactly (discarding local manual changes)
         ${pkgs.git}/bin/git fetch origin
         ${pkgs.git}/bin/git reset --hard origin/live
+      fi
+
+      # 2.1 Copy Hardware Configuration
+      # We need the hardware config that was generated during install, otherwise the flake won't build.
+      if [ -f /etc/nixos/hardware-configuration.nix ]; then
+        cp /etc/nixos/hardware-configuration.nix .
       fi
 
       # 3. Apply the Configuration
