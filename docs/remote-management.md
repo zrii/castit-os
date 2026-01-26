@@ -28,8 +28,28 @@ If you have SSH access, you can force an immediate update:
 sudo systemctl start update-signage
 ```
 
-You can check the logs to see if it worked:
+### Monitoring Updates
 
+**Check the status of the last update:**
 ```bash
-journalctl -u update-signage -f
+sudo systemctl status update-signage
 ```
+
+**View update logs:**
+```bash
+sudo journalctl -u update-signage
+```
+
+**View real-time logs while running:**
+```bash
+sudo journalctl -u update-signage -f
+```
+
+**Check when the next automatic update is scheduled:**
+```bash
+systemctl list-timers update-signage
+```
+
+The update service runs:
+- **2 minutes after boot** 
+- **Every hour thereafter**

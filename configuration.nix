@@ -93,10 +93,12 @@
         # We force reset to match origin/live exactly (discarding local manual changes)
         ${pkgs.git}/bin/git fetch origin
         ${pkgs.git}/bin/git reset --hard origin/live
-        cp /etc/nixos/hardware-configuration.nix .
       fi
 
-      #3. Apply the Configuration
+      # 3. Copy Hardware Configuration (must be done every time)
+      cp /etc/nixos/hardware-configuration.nix .
+
+      # 4. Apply the Configuration
       echo "Applying configuration..."
       ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake .#intel-player --impure
     '';
