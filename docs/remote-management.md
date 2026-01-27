@@ -54,7 +54,8 @@ The update service runs:
 - **2 minutes after boot** 
 - **Every hour thereafter**
 
-Debuging
+## Debuging
+
 - **SSH** - `ssh kiosk@[IP_ADDRESS]`
 - **Tunnel the port 9222 for chrome debugging** - `ssh -L [LOCAL_PORT]:localhost:9222 kiosk@[IP_ADDRESS]`
 - **Open chrome on your machine** - `chrome://inspect/#devices`

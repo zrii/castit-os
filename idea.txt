@@ -1,3 +1,5 @@
-Idea - SVI playeri da instaliraju skripte
-Da idu i da dodaju SSHpa preko njega mozemo da debugujemo i console
-i severali to da bude prvo -d a isprobam ono sto dodaje SSH ne znam kako because
+can android application open ssh connection for debugging
+create a isgnatire per machine, of some sort, a generated file on each startup or similar.
+Idea - SVI playeri da instaliraju skripte, i da mogu i kernle da podizu na nove verzije
+Da idu i da dodaju SSHHa preko njega mozemo da debugujemo i console, poput ovo gsot je zavrseno za nixos
+Tailgate da se napravi sada i da se istestira
