@@ -120,15 +120,30 @@
     };
     script = ''
       set -e
-      # Wait for network
-      until ${pkgs.curl}/bin/curl -s --head  --request GET https://google.com | grep "200 OK" > /dev/null; do
+      # Wait for network (use curl exit code, works with HTTP/2)
+      until ${pkgs.curl}/bin/curl -s --head --max-time 5 https://google.com > /dev/null 2>&1; do
+        echo "Waiting for network..."
         sleep 2
       done
+      echo "Network is up."
 
-      ${pkgs.tailscale}/bin/tailscale status | grep -v "Logged out" && exit 0
-      [ ! -f /boot/ts-authkey ] && exit 0
+      # Skip if already connected
+      if ${pkgs.tailscale}/bin/tailscale status 2>/dev/null | grep -q "100\." ; then
+        echo "Already connected to Tailscale."
+        exit 0
+      fi
+
+      # Look for authkey
+      if [ ! -f /boot/ts-authkey ]; then
+        echo "No ts-authkey found at /boot/ts-authkey. Skipping Tailscale setup."
+        exit 0
+      fi
+
       KEY=$(cat /boot/ts-authkey)
-      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="castit-$(cat /etc/castit-id || hostname)"
+      HOSTNAME="castit-$(cat /etc/castit-id 2>/dev/null || hostname)"
+      echo "Joining Tailscale as $HOSTNAME..."
+      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME"
+      echo "Tailscale connected!"
     '';
   };
 
