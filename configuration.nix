@@ -10,8 +10,7 @@
     extraGroups = [ "networkmanager" "video" "audio" "wheel" ];
     initialPassword = "castit-setup";
     openssh.authorizedKeys.keys = [
-      # Paste your public keys here to grant access to ALL players automatically
-      # "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA..." 
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG6IwHAG097lffn7PFKc89TWd3QYQhPSMILGnSKcVwa+ z.popovic@futureforward.rs"
     ];
   };
 

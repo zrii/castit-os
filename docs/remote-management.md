@@ -24,11 +24,11 @@ To enable remote access automatically, you need to place two files on the root o
 If you don't already have an SSH key, you can generate one on your computer:
 
 1.  **Open a terminal** (Linux/Mac) or PowerShell (Windows).
-2.  **Run**: `ssh-keygen -t ed25519 -C "admin@yourcompany.com"`
+2.  **Run**: `ssh-keygen -t ed25519 -C "admin@yourcompany.com"  -f ~/.ssh/castit-ssh`
 3.  Press Enter to save to the default location.
 4.  **Find your public key**:
-    -   Linux/Mac: `cat ~/.ssh/id_ed25519.pub`
-    -   Windows: `cat $HOME\.ssh\id_ed25519.pub`
+    -   Linux/Mac: `cat ~/.ssh/castit-ssh.pub`
+    -   Windows: `cat $HOME\.ssh\castit-ssh.pub`
 5.  **Create the file**: Create a file named `ssh-key` (no extension) on your USB and paste that long string into it.
 
 ### C. (Recommended) Git-Based Key Management

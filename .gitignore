@@ -16,3 +16,4 @@
 # Generated ISO images
 *.iso
 ts-authkey
+ssh-key
