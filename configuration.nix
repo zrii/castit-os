@@ -8,7 +8,11 @@
   users.users.kiosk = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "video" "audio" "wheel" ];
-    initialPassword = "castit-setup"; 
+    initialPassword = "castit-setup";
+    openssh.authorizedKeys.keys = [
+      # Paste your public keys here to grant access to ALL players automatically
+      # "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA..." 
+    ];
   };
 
   environment.systemPackages = [ pkgs.git ];
@@ -31,8 +35,16 @@
     environment = {
       XCURSOR_SIZE = "0";
     };
-    program = let
-      chromium-flags = [
+    program = pkgs.writeShellScript "castit-browser" ''
+      # 1. Get or Generate ID
+      if [ -f /etc/castit-id ]; then
+        CID=$(cat /etc/castit-id)
+      else
+        CID="unknown"
+      fi
+
+      # 2. Define Flags
+      FLAGS=(
         "--kiosk"
         "--no-first-run"
         "--no-default-browser-check"
@@ -47,62 +59,144 @@
         "--remote-debugging-port=9222"
         "--check-for-update-interval=31536000"
         "--disable-hang-monitor"
-        "--enable-logging=stderr --v=1"
         "--remote-allow-origins=*"
         "--disable-pinch"
         "--unlimited-storage"
-        "--overscroll-history-navigation=0"        
-      ];
-      castit-url = "https://app.castit.nl/player/webPlayer";
-    in "${pkgs.chromium}/bin/chromium ${builtins.concatStringsSep " " chromium-flags} ${castit-url}";
-  };
+        "--overscroll-history-navigation=0"
+      )
 
-  # 5. REMOTE ACCESS
-  services.openssh.enable = true;
-  services.tailscale.enable = true;
-  systemd.services.tailscale-autoconnect = {
-    description = "Automatic Tailscale Join";
-    after = [ "network-pre.target" "tailscaled.service" ];
-    wants = [ "network-pre.target" "tailscaled.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      sleep 5
-      ${pkgs.tailscale}/bin/tailscale status | grep -v "Logged out" && exit 0
-      [ ! -f /boot/ts-authkey ] && exit 0
-      KEY=$(cat /boot/ts-authkey)
-      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY"
+      # 3. Start Browser
+      URL="https://app.castit.nl/player/webPlayer?cid=$CID"
+      exec ${pkgs.chromium}/bin/chromium "''${FLAGS[@]}" "$URL"
     '';
   };
 
-  # 6. AUTO UPDATER 
+  # 5. REMOTE ACCESS
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = lib.mkForce true; # Default, but we might override
+      PermitRootLogin = "no";
+    };
+  };
+
+  # SSH Key Auto-Import (From USB)
+  # This is for "Zero-Touch" setup on new devices.
+  # For permanent management, add keys to users.users.kiosk.openssh.authorizedKeys.keys above.
+  systemd.services.ssh-key-import = {
+    description = "Import SSH keys from boot partition";
+    before = [ "sshd.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      # 1. Check for key on boot
+      if [ -f /boot/ssh-key ]; then
+        echo "Found ssh-key on boot. Importing..."
+        mkdir -p /home/kiosk/.ssh
+        
+        # Add keys selectively (avoid duplicates)
+        while IFS= read -r key; do
+          if ! grep -qxF "$key" /home/kiosk/.ssh/authorized_keys 2>/dev/null; then
+            echo "$key" >> /home/kiosk/.ssh/authorized_keys
+          fi
+        done < /boot/ssh-key
+
+        chmod 700 /home/kiosk/.ssh
+        chmod 600 /home/kiosk/.ssh/authorized_keys
+        chown -R kiosk:users /home/kiosk/.ssh
+      fi
+    '';
+  };
+
+  services.tailscale.enable = true;
+  systemd.services.tailscale-autoconnect = {
+    description = "Automatic Tailscale Join";
+    after = [ "network-online.target" "tailscaled.service" ];
+    wants = [ "network-online.target" "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      Restart = "on-failure";
+      RestartSec = "10s";
+    };
+    script = ''
+      set -e
+      # Wait for network
+      until ${pkgs.curl}/bin/curl -s --head  --request GET https://google.com | grep "200 OK" > /dev/null; do
+        sleep 2
+      done
+
+      ${pkgs.tailscale}/bin/tailscale status | grep -v "Logged out" && exit 0
+      [ ! -f /boot/ts-authkey ] && exit 0
+      KEY=$(cat /boot/ts-authkey)
+      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="castit-$(cat /etc/castit-id || hostname)"
+    '';
+  };
+
+  # 6. CASTIT CORE SERVICES (ID Generation)
+  systemd.services.castit-init = {
+    description = "Initialize Castit Machine Identity";
+    before = [ "cage-tty1.service" "tailscale-autoconnect.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      if [ ! -f /etc/castit-id ]; then
+        # Try Product UUID, else Fallback to machine-id
+        if [ -f /sys/class/dmi/id/product_uuid ]; then
+           cat /sys/class/dmi/id/product_uuid | tr -d '-' | cut -c1-12 > /etc/castit-id
+        else
+           cat /etc/machine-id | cut -c1-12 > /etc/castit-id
+        fi
+      fi
+    '';
+  };
+
+  # 7. AUTO UPDATER 
   systemd.services.update-signage = {
     description = "Pull latest configuration from Git and Apply";
-    path = [ pkgs.git pkgs.nixos-rebuild pkgs.nix ];
+    path = [ pkgs.git pkgs.nixos-rebuild pkgs.nix pkgs.util-linux ];
     script = ''
-      # 0. Safety Check
-      echo "Starting Auto-Update as user: $(whoami)"
+      set -e
+      LOG_TAG="[UPDATE]"
+      echo "$LOG_TAG Starting update check at $(date)"
 
       # 1. Prepare Directory
       mkdir -p /etc/castit-os
       cd /etc/castit-os
 
-      # 2. Clone or Reset
+      # 2. Get Current Version
+      CURRENT_REV="unknown"
+      [ -d .git ] && CURRENT_REV=$(${pkgs.git}/bin/git rev-parse --short HEAD)
+      echo "$LOG_TAG Current revision: $CURRENT_REV"
+
+      # 3. Fetch and Compare
+      echo "$LOG_TAG [FETCH] Checking remote repository..."
       if [ ! -d .git ]; then
         ${pkgs.git}/bin/git clone https://github.com/zrii/castit-os.git .
       else
-        # We force reset to match origin/live exactly (discarding local manual changes)
         ${pkgs.git}/bin/git fetch origin
-        ${pkgs.git}/bin/git reset --hard origin/live
+      fi
+      
+      TARGET_REV=$(${pkgs.git}/bin/git rev-parse --short origin/live)
+      echo "$LOG_TAG Target revision: $TARGET_REV"
+
+      if [ "$CURRENT_REV" = "$TARGET_REV" ]; then
+        echo "$LOG_TAG [SKIP] Already up to date."
+        exit 0
       fi
 
-      # 3. Apply the Configuration
-      echo "Applying configuration..."
+      # 4. Apply
+      echo "$LOG_TAG [APPLY] Resetting to $TARGET_REV..."
+      ${pkgs.git}/bin/git reset --hard origin/live
+
+      echo "$LOG_TAG [BUILD] Rebuilding system..."
       ${pkgs.nixos-rebuild}/bin/nixos-rebuild switch --flake .#intel-player --impure
 
-      # 4. Restart the kiosk display
-      echo "Restarting kiosk..."
+      # 5. Restart
+      echo "$LOG_TAG [RESTART] Refreshing display..."
       systemctl restart cage-tty1
+      
+      echo "$LOG_TAG [DONE] Update successful."
     '';
     serviceConfig = {
       Type = "oneshot";

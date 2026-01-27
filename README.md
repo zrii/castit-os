@@ -5,9 +5,10 @@
 ## Features
 
 -   **Kiosk Mode**: Boots directly into `chromium` in kiosk mode, pointing to the Castit player URL.
+-   **Machine Identity**: Automatically generates a unique 12-char ID (`castit-id`) per unit. Passes `?cid=<ID>` to the player URL.
 -   **Automated Installation**: Includes a custom `auto-install` script optimized for low-RAM devices.
--   **Remote Management**: Pre-configured with **Tailscale** for secure remote access and **OpenSSH**.
--   **Auto-Updates**: Automatically pulls the latest configuration from the GitHub repository and rebuilds the system on a timer.
+-   **Remote Management**: Pre-configured with **Tailscale** for secure remote access and **OpenSSH**. Supports **Zero-Touch SSH Key** auto-import.
+-   **Auto-Updates**: Automatically pulls the latest configuration from the GitHub repository and rebuilds the system on a timer with detailed logging.
 -   **Silent Boot**: Custom Plymouth theme ("logo.png") for a professional, branded boot experience.
 -   **Resilience**: Configured with swap and specific boot parameters to ensure stability on constrained hardware.
 
@@ -104,8 +105,9 @@ The installation medium configuration.
 
 ## Remote Access & Updates
 
--   **Tailscale**: The system attempts to auto-join a Tailscale network if a key is provided in `/boot/ts-authkey` or if pre-authenticated.
--   **Updates**: A systemd timer (`update-signage`) runs every hour (and 10m after boot) to check this repository for changes. If changes are found, it pulls them and runs `nixos-rebuild switch`.
+-   **Tailscale**: The system auto-joins your Tailscale network if a `ts-authkey` is on the USB.
+-   **SSH Auto-Key**: Place an `ssh-key` (public key) on the USB for instant passwordless access.
+-   **Updates**: A systemd timer (`update-signage`) runs every hour. It detects changes in the `live` branch, pulls them, and rebuilds the system automatically.
 
 ## Efficient Development Workflow
 
