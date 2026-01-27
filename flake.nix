@@ -20,7 +20,7 @@
         system = "x86_64-linux";
         modules = [
           ./configuration.nix
-          /etc/nixos/hardware-configuration.nix # Absolute path - always read from device
+          ./hardware-configuration.nix 
           ({ pkgs, lib, ... }: {
             boot.loader.systemd-boot.enable = true;
             boot.loader.systemd-boot.editor = false;
