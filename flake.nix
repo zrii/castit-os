@@ -45,10 +45,14 @@
             boot.loader.timeout = lib.mkForce 0;
             boot.loader.systemd-boot.editor = false;
             
-            # Embed the config files into the ISO so we don't need Git
+            # Embed the config files into the ISO
             environment.etc."nixos-config/flake.nix".source = ./flake.nix;
             environment.etc."nixos-config/configuration.nix".source = ./configuration.nix;
             environment.etc."nixos-config/logo.png".source = ./logo.png;
+
+            # Automatically embed keys if they exist in the project directory
+            environment.etc."nixos-config/ts-authkey".source = lib.mkIf (builtins.pathExists ./ts-authkey) ./ts-authkey;
+            environment.etc."nixos-config/ssh-key".source = lib.mkIf (builtins.pathExists ./ssh-key) ./ssh-key;
 
             # Added compatibility modules for Stage 1 boot
             boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];
@@ -97,11 +101,13 @@
                 sudo cp /etc/nixos-config/configuration.nix /mnt/etc/nixos/
                 sudo cp /etc/nixos-config/logo.png /mnt/etc/nixos/
 
-                # Propagate Keys from USB to SSD (if present)
-                # In the live ISO, the root of the USB is usually /iso
+                # Propagate Keys (Primary: Embedded in ISO, Fallback: USB root)
                 for key in ts-authkey ssh-key; do
-                  if [ -f "/iso/$key" ]; then
-                    echo "Found $key on USB, copying to target boot partition..."
+                  if [ -f "/etc/nixos-config/$key" ]; then
+                    echo "Found embedded $key, copying to target boot partition..."
+                    sudo cp "/etc/nixos-config/$key" /mnt/boot/
+                  elif [ -f "/iso/$key" ]; then
+                    echo "Found $key on USB root, copying to target boot partition..."
                     sudo cp "/iso/$key" /mnt/boot/
                   fi
                 done
