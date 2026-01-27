@@ -285,3 +285,39 @@ Then revert the `configuration.nix` changes and push.
 - [Headscale GitHub](https://github.com/juanfont/headscale)
 - [Headscale Documentation](https://headscale.net/)
 - [NixOS Headscale Module](https://search.nixos.org/options?query=services.headscale)
+
+
+please do not commit messages. I can do it myself. Also a question - do we need to go into individual computers in step 4 migration, or they will upgrade once the git changes on live branch? and connect to our own instance?
+
+Thought for 6s
+
+
+
+
+
+Got it, no more auto-commits from me!
+
+To answer your question: The devices will NOT automatically switch to Headscale just from the git update. Here's why:
+
+The Problem
+The tailscale-autoconnect service has this check:
+
+if tailscale status | grep -q "100\." ; then
+  echo "Already connected."
+  exit 0   # <-- Exits early, never re-connects to different server
+fi
+So when the update pulls the new config:
+
+✅ New service gets installed
+❌ But it sees "already connected to Tailscale" and exits
+❌ Never switches to Headscale
+The Solution
+You have two options:
+
+Option A: One-Time Manual Migration (Recommended)
+SSH into each device once and run tailscale logout → then the next service run will connect to Headscale.
+
+Option B: Add a Migration Script
+I can add a one-time "migration mode" flag that forces a logout+reconnect. This would be pushed to live, devices auto-update, they switch to Headscale, then you remove the flag.
+
+Would you like me to update the migration plan to include Option B (the automated approach)?
