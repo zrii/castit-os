@@ -96,6 +96,15 @@
                 sudo cp /etc/nixos-config/flake.nix /mnt/etc/nixos/
                 sudo cp /etc/nixos-config/configuration.nix /mnt/etc/nixos/
                 sudo cp /etc/nixos-config/logo.png /mnt/etc/nixos/
+
+                # Propagate Keys from USB to SSD (if present)
+                # In the live ISO, the root of the USB is usually /iso
+                for key in ts-authkey ssh-key; do
+                  if [ -f "/iso/$key" ]; then
+                    echo "Found $key on USB, copying to target boot partition..."
+                    sudo cp "/iso/$key" /mnt/boot/
+                  fi
+                done
                 
                 # We point to the baked-in config files inside /etc/nixos-config
                 sudo -E nixos-install --flake /mnt/etc/nixos#intel-player --no-root-passwd --option cores 1 --option max-jobs 1 --impure

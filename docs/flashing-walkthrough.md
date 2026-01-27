@@ -50,15 +50,32 @@ sudo dd if=result/iso/castit-24.11.20250630.50ab793-x86_64-linux.iso of=/dev/sdb
 - `conv=fsync`: Ensures all data is physically written to the drive before finishing.
 
 ## 4. Verify the Flash
-After `dd` completes, verify the partition table on the USB:
+After `dd` or `bmaptool` completes, verify the partition table on the USB:
 ```bash
 lsblk /dev/sdb
 ```
-You should see at least two partitions:
-1. A large partition (the Castit OS system).
-2. A small EFI partition.
+You should see at least two partitions.
 
-## 5. Next Steps
+## 5. Provisioning (Optional: Remote Access)
+To enable Tailscale and SSH automatically, you must copy your key files to the USB's boot partition:
+
+1.  **Identify the Boot Partition**: Run `lsblk` again. Look for a small partition (~512MB-2GB) on `/dev/sdb`, usually `/dev/sdb1` or `/dev/sdb2`.
+2.  **Mount it**:
+    ```bash
+    sudo mkdir -p /mnt/usb
+    sudo mount /dev/sdb2 /mnt/usb  # Replace sdb2 with your actual boot partition
+    ```
+3.  **Copy your keys**:
+    ```bash
+    sudo cp ts-authkey /mnt/usb/
+    sudo cp ssh-key /mnt/usb/
+    ```
+4.  **Unmount**:
+    ```bash
+    sudo umount /mnt/usb
+    ```
+
+## 6. Next Steps
 1. Safely unplug the USB drive.
 2. Plug it into the target Intel player hardware.
 3. Boot from the USB.
