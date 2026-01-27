@@ -7,54 +7,34 @@ All Castit OS devices come with **Tailscale** pre-installed and enabled. This al
 1.  **Tailscale Access**: 
     - Ensure you have a `ts-authkey` file in the root of your installation USB (or `/boot/ts-authkey` on the device).
     - The device will automatically join your Tailscale network on boot as `castit-<ID>`.
-2.  **SSH Access**:
-    - Place your public SSH key in a file named `ssh-key` in the root of the installation USB.
-    - **Multiple Keys**: You can paste multiple public keys into the same `ssh-key` file (one per line). This allows multiple administrators to access the player.
-    - The system will automatically add them to the `kiosk` user's `authorized_keys` on boot.
-3.  **Machine Identity**:
-    - Access the device via Tailscale: `ssh kiosk@castit-<ID>` (where `<ID>` is the 12-char hardware ID shown in the URL or `/etc/castit-id`).
+## 2. Provisioning Guide (The "Bake-in" Method)
 
----
+To enable remote access automatically, you should "bake" your keys directly into the ISO image during the build process. This is the easiest and most reliable method.
 
-## 2. Provisioning Guide (How to prepare your USB)
+### A. Prepare your keys in the project root
+1.  **SSH Key**: Create a file named `ssh-key` (no extension) in your `castit-os` folder. Paste your public key(s) there.
+    -   *To generate a new key*: `ssh-keygen -t ed25519 -C "admin@yourcompany.com" -f ~/.ssh/castit-ssh`
+2.  **Tailscale Key**: Create a file named `ts-authkey` (no extension) in your `castit-os` folder. Paste your reusable Tailscale auth key there.
 
-To enable remote access automatically, you need to place two files on the root of your bootable USB stick **after flashing it**.
+### B. Inform Nix about the files
+If the files are not yet tracked by Git, Nix will ignore them. Run this command to tell Nix they exist:
+```bash
+git add -N ts-authkey ssh-key
+```
 
-### A. Generating an SSH Key
-If you don't already have an SSH key, you can generate one on your computer:
+### C. Build and Flash
+1.  **Rebuild the ISO**: 
+    ```bash
+    nix build .#installer --impure
+    ```
+    Nix will automatically detect the files and embed them in the ISO.
+2.  **Flash the USB**:
+    ```bash
+    sudo bmaptool copy result/iso/castit-*.iso /dev/sdX
+    ```
 
-1.  **Open a terminal** (Linux/Mac) or PowerShell (Windows).
-2.  **Run**: `ssh-keygen -t ed25519 -C "admin@yourcompany.com"  -f ~/.ssh/castit-ssh`
-3.  Press Enter to save to the default location.
-4.  **Find your public key**:
-    -   Linux/Mac: `cat ~/.ssh/castit-ssh.pub`
-    -   Windows: `cat $HOME\.ssh\castit-ssh.pub`
-5.  **Create the file**: Create a file named `ssh-key` (no extension) on your USB and paste that long string into it.
-
-### C. (Recommended) Git-Based Key Management
-Instead of using the USB for every device, you can manage keys centrally in the code:
-
-1.  Open `configuration.nix`.
-2.  Find the `users.users.kiosk.openssh.authorizedKeys.keys` list.
-3.  Paste your public keys there.
-4.  **Commit and push** to the `live` branch.
-5.  **All players** will automatically pull this update within an hour and grant you access.
-
-> [!TIP]
-> Use the **USB Method** for the very first installation of a device. Once it's online and updating itself, use the **Git Method** to add/remove administrators or update your own keys.
-
-### D. Getting a Tailscale Auth Key
-1.  Log in to your [Tailscale Admin Console](https://login.tailscale.com/admin/settings/keys).
-2.  Go to **Settings** -> **Keys**.
-3.  Click **Generate auth key**.
-4.  **Recommended Settings**:
-    -   **Reusable**: Yes (if you are deploying multiple players).
-    -   **Ephemeral**: No.
-    -   **Pre-authorized**: Yes.
-5.  **Create the file**: Copy the key (starting with `tskey-auth-...`) and paste it into a file named `ts-authkey` (no extension) on the root of your USB.
-
-> [!TIP]
-> Once the device boots and joins your network, you can manage it from the Tailscale dashboard. You can even use "Device Settings" in Tailscale to disable key expiry for your signage players so they stay connected forever.
+> [!IMPORTANT]
+> Because you "baked" the keys into the ISO, you don't need to manually mount or copy anything after flashing. The Zero-Touch installer will find the keys inside the ISO and move them to the final device for you.
 
 ---
 

@@ -51,8 +51,12 @@
             environment.etc."nixos-config/logo.png".source = ./logo.png;
 
             # Automatically embed keys if they exist in the project directory
-            environment.etc."nixos-config/ts-authkey".source = lib.mkIf (builtins.pathExists ./ts-authkey) ./ts-authkey;
-            environment.etc."nixos-config/ssh-key".source = lib.mkIf (builtins.pathExists ./ssh-key) ./ssh-key;
+            environment.etc."nixos-config/ts-authkey" = lib.mkIf (builtins.pathExists ./ts-authkey) {
+              source = ./ts-authkey;
+            };
+            environment.etc."nixos-config/ssh-key" = lib.mkIf (builtins.pathExists ./ssh-key) {
+              source = ./ssh-key;
+            };
 
             # Added compatibility modules for Stage 1 boot
             boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];

@@ -105,8 +105,8 @@ The installation medium configuration.
 
 ## Remote Access & Updates
 
--   **Tailscale**: The system auto-joins your Tailscale network if a `ts-authkey` is on the USB.
--   **SSH Auto-Key**: Place an `ssh-key` (public key) on the USB for instant passwordless access.
+-   **Tailscale**: The system auto-joins your Tailscale network. Create a `ts-authkey` file in the project root before building the ISO to "bake" it in.
+-   **SSH Auto-Key**: Create an `ssh-key` file in the project root before building to get instant passwordless access on all devices.
 -   **Updates**: A systemd timer (`update-signage`) runs every hour. It detects changes in the `live` branch, pulls them, and rebuilds the system automatically.
 
 ## Efficient Development Workflow

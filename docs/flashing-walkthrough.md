@@ -57,23 +57,15 @@ lsblk /dev/sdb
 You should see at least two partitions.
 
 ## 5. Provisioning (Optional: Remote Access)
-To enable Tailscale and SSH automatically, you must copy your key files to the USB's boot partition:
+To enable Tailscale and SSH automatically, the recommended method is to **bake the keys into the ISO** during the build phase:
 
-1.  **Identify the Boot Partition**: Run `lsblk` again. Look for a small partition (~512MB-2GB) on `/dev/sdb`, usually `/dev/sdb1` or `/dev/sdb2`.
-2.  **Mount it**:
-    ```bash
-    sudo mkdir -p /mnt/usb
-    sudo mount /dev/sdb2 /mnt/usb  # Replace sdb2 with your actual boot partition
-    ```
-3.  **Copy your keys**:
-    ```bash
-    sudo cp ts-authkey /mnt/usb/
-    sudo cp ssh-key /mnt/usb/
-    ```
-4.  **Unmount**:
-    ```bash
-    sudo umount /mnt/usb
-    ```
+1.  **Place keys in project root**: Ensure `ts-authkey` and `ssh-key` are in your `castit-os` folder.
+2.  **Add to Git (untracked)**: Run `git add -N ts-authkey ssh-key` so Nix can see them.
+3.  **Build**: Run `nix build .#installer --impure`.
+4.  **Flash**: Flash the resulting ISO using `bmaptool`.
+
+> [!NOTE]
+> Because the keys are embedded in the ISO, the Zero-Touch installer will automatically provision them to the target hardware. No manual copying to the USB is required after flashing.
 
 ## 6. Next Steps
 1. Safely unplug the USB drive.
