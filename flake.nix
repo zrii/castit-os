@@ -61,31 +61,85 @@
             # Added compatibility modules for Stage 1 boot
             boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];
 
-            # The "Low Memory" Automation Script
+            # The "Low Memory" Automation Script with Interactive Disk Selection
             environment.systemPackages = [
               (pkgs.writeShellScriptBin "auto-install" ''
                 set -e
-                echo "--- STARTING CASTIT OS AUTOMATED INSTALL (LOW RAM MODE) ---"                
-                echo "!!! WARNING: THIS WILL WIPE /dev/mmcblk0 !!!"
-                echo -e "\nProceeding with installation..."
+                echo "=============================================="
+                echo "       CASTIT OS INSTALLER"
+                echo "=============================================="
+                echo ""
+
+                # --- DISK SELECTION ---
+                echo "Available disks:"
+                echo ""
+                
+                # List disks (exclude loop, ram, and the USB installer itself)
+                mapfile -t DISKS < <(lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep -E "disk$" | grep -v "loop" | awk '{print $1}')
+                
+                if [ ''${#DISKS[@]} -eq 0 ]; then
+                  echo "ERROR: No suitable disks found!"
+                  exit 1
+                fi
+
+                # Display numbered list
+                for i in "''${!DISKS[@]}"; do
+                  DISK="''${DISKS[$i]}"
+                  INFO=$(lsblk -d -n -o SIZE,MODEL /dev/$DISK 2>/dev/null | xargs)
+                  echo "  $((i+1))) $DISK - $INFO"
+                done
+                echo ""
+
+                # Get user selection
+                while true; do
+                  read -p "Select target disk [1-''${#DISKS[@]}]: " CHOICE
+                  if [[ "$CHOICE" =~ ^[0-9]+$ ]] && [ "$CHOICE" -ge 1 ] && [ "$CHOICE" -le "''${#DISKS[@]}" ]; then
+                    TARGET_DISK="/dev/''${DISKS[$((CHOICE-1))]}"
+                    break
+                  fi
+                  echo "Invalid selection. Please try again."
+                done
+
+                # Determine partition naming (nvme/mmc use 'p1', others use '1')
+                if [[ "$TARGET_DISK" == *"nvme"* ]] || [[ "$TARGET_DISK" == *"mmcblk"* ]]; then
+                  PART1="''${TARGET_DISK}p1"
+                  PART2="''${TARGET_DISK}p2"
+                else
+                  PART1="''${TARGET_DISK}1"
+                  PART2="''${TARGET_DISK}2"
+                fi
+
+                echo ""
+                echo "!!! WARNING: THIS WILL COMPLETELY WIPE $TARGET_DISK !!!"
+                echo "    EFI Partition: $PART1"
+                echo "    Root Partition: $PART2"
+                echo ""
+                read -p "Type 'yes' to confirm: " CONFIRM
+                if [ "$CONFIRM" != "yes" ]; then
+                  echo "Installation cancelled."
+                  exit 1
+                fi
+
+                echo ""
+                echo "--- STARTING INSTALLATION ---"
 
                 # 1. Manual Partitioning (Uses less RAM than Disko)
-                echo ">>> [1/5] Partitioning /dev/mmcblk0..."
-                sudo parted -s /dev/mmcblk0 mklabel gpt
-                sudo parted -s /dev/mmcblk0 mkpart ESP fat32 1MiB 512MiB
-                sudo parted -s /dev/mmcblk0 set 1 esp on
-                sudo parted -s /dev/mmcblk0 mkpart primary ext4 512MiB 100%
+                echo ">>> [1/5] Partitioning $TARGET_DISK..."
+                sudo parted -s $TARGET_DISK mklabel gpt
+                sudo parted -s $TARGET_DISK mkpart ESP fat32 1MiB 512MiB
+                sudo parted -s $TARGET_DISK set 1 esp on
+                sudo parted -s $TARGET_DISK mkpart primary ext4 512MiB 100%
                 
                 # 2. Format
                 echo ">>> [2/5] Formatting..."
-                sudo mkfs.fat -F 32 -n boot /dev/mmcblk0p1
-                sudo mkfs.ext4 -L castit-os -F /dev/mmcblk0p2
+                sudo mkfs.fat -F 32 -n boot $PART1
+                sudo mkfs.ext4 -L castit-os -F $PART2
 
                 # 3. MOUNT & ENABLE SWAP (The Fix for Crashing)
                 echo ">>> [3/5] Enabling Swap to prevent crash..."
-                sudo mount /dev/mmcblk0p2 /mnt
+                sudo mount $PART2 /mnt
                 sudo mkdir -p /mnt/boot
-                sudo mount /dev/mmcblk0p1 /mnt/boot
+                sudo mount $PART1 /mnt/boot
                 
                 sudo fallocate -l 4G /mnt/swapfile
                 sudo chmod 600 /mnt/swapfile
