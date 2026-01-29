@@ -96,8 +96,10 @@
             
             # Embed the config files into the ISO
             environment.etc."nixos-config/flake.nix".source = ./flake.nix;
+            environment.etc."nixos-config/flake.lock".source = ./flake.lock;
             environment.etc."nixos-config/configuration.nix".source = ./configuration.nix;
             environment.etc."nixos-config/logo.png".source = ./logo.png;
+            environment.etc."nixos-config/assets".source = ./assets;
 
             # Automatically embed keys if they exist in the project directory
             environment.etc."nixos-config/ts-authkey" = lib.mkIf (builtins.pathExists ./ts-authkey) {
@@ -120,15 +122,6 @@
                 echo "=============================================="
                 echo "       CASTIT OS INSTALLER"
                 echo "=============================================="
-                echo ""
-
-                # --- NETWORK CHECK ---
-                echo "Checking internet connection..."
-                until ping -c 1 google.com >/dev/null 2>&1; do
-                  echo "Waiting for network... (Press Ctrl+C to configure manually if needed)"
-                  sleep 2
-                done
-                echo "Network is ONLINE."
                 echo ""
 
                 # --- NETWORK CHECK & WIFI SELECTION ---
@@ -230,19 +223,19 @@
                 echo "--- STARTING INSTALLATION ---"
 
                 # 1. Manual Partitioning (Uses less RAM than Disko)
-                echo ">>> [1/5] Partitioning $TARGET_DISK..."
+                echo ">>> [1/6] Partitioning $TARGET_DISK..."
                 sudo parted -s $TARGET_DISK mklabel gpt
                 sudo parted -s $TARGET_DISK mkpart ESP fat32 1MiB 512MiB
                 sudo parted -s $TARGET_DISK set 1 esp on
                 sudo parted -s $TARGET_DISK mkpart primary ext4 512MiB 100%
                 
                 # 2. Format
-                echo ">>> [2/5] Formatting..."
+                echo ">>> [2/6] Formatting..."
                 sudo mkfs.fat -F 32 -n boot $PART1
                 sudo mkfs.ext4 -L castit-os -F $PART2
 
                 # 3. MOUNT & ENABLE SWAP (The Fix for Crashing)
-                echo ">>> [3/5] Enabling Swap to prevent crash..."
+                echo ">>> [3/6] Enabling Swap to prevent crash..."
                 sudo mount $PART2 /mnt
                 sudo mkdir -p /mnt/boot
                 sudo mount $PART1 /mnt/boot
@@ -253,17 +246,19 @@
                 sudo swapon /mnt/swapfile
 
                 # 4. Generate Hardware Config
-                echo ">>> [4/5] Generating Hardware Config..."
+                echo ">>> [4/6] Generating Hardware Config..."
                 sudo nixos-generate-config --root /mnt
 
                 # 5. Install (Redirecting temp files to disk)
-                echo ">>> [5/5] Installing OS..."
+                echo ">>> [5/6] Installing OS..."
                 sudo mkdir -p /mnt/tmp
                 export TMPDIR=/mnt/tmp
 
                 sudo cp /etc/nixos-config/flake.nix /mnt/etc/nixos/
+                sudo cp /etc/nixos-config/flake.lock /mnt/etc/nixos/
                 sudo cp /etc/nixos-config/configuration.nix /mnt/etc/nixos/
                 sudo cp /etc/nixos-config/logo.png /mnt/etc/nixos/
+                sudo cp -r /etc/nixos-config/assets /mnt/etc/nixos/
 
                 # Propagate Keys (Primary: Embedded in ISO, Fallback: USB root)
                 for key in ts-authkey tailscale-secret ssh-key; do
@@ -277,7 +272,7 @@
                 done
 
                 # --- PERSIST NETWORK CONFIGURATION ---
-                echo ">>> [6/5] Persisting Wi-Fi credentials..."
+                echo ">>> [6/6] Persisting Wi-Fi credentials..."
                 sudo mkdir -p /mnt/etc/NetworkManager
                 sudo cp -rv /etc/NetworkManager/system-connections /mnt/etc/NetworkManager/
                 sudo chmod 600 /mnt/etc/NetworkManager/system-connections/* 2>/dev/null || true
