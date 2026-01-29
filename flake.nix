@@ -71,6 +71,15 @@
                 echo "=============================================="
                 echo ""
 
+                # --- NETWORK CHECK ---
+                echo "Checking internet connection..."
+                until ping -c 1 google.com >/dev/null 2>&1; do
+                  echo "Waiting for network... (Press Ctrl+C to configure manually if needed)"
+                  sleep 2
+                done
+                echo "Network is ONLINE."
+                echo ""
+
                 # --- DISK SELECTION ---
                 echo "Available disks:"
                 echo ""

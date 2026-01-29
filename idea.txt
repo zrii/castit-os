@@ -6,4 +6,7 @@ can android application open ssh connection for debugging.
 
 Idea - SVI playeri da instaliraju skripte, i da mogu i kernle da podizu na nove verzije.
 Da idu i da dodaju SSHHa preko njega mozemo da debugujemo i console, poput ovo gsot je zavrseno za nixos.
-             
+
+hotspot - Castit:Castitv4
+
+It needs to work with wifi, and allow us to choose a wifi... and at what point can we do this?
