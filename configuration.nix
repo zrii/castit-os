@@ -25,33 +25,7 @@
     alsa.enable = true;
     pulse.enable = true;
   };
-  security.rtkit.enable = true;[kiosk@castit-player:~]$ # 1. Check if the ts-authkey file exists
-ls -la /boot/ts-authkey
-# 2. Check Tailscale service status
-sudo systemctl status tailscale-autoconnect
-# 3. Check Tailscale service logs
-sudo journalctl -u tailscale-autoconnect -n 50
-# 4. Check current Tailscale state
-sudo tailscale status
-ls: cannot access '/boot/ts-authkey': No such file or directory
-[sudo] password for kiosk: 
-● tailscale-autoconnect.service - Automatic Tailscale Join
-     Loaded: loaded (/etc/systemd/system/tailscale-autoconnect.service; enabled; preset: ignored)
-     Active: activating (start) since Tue 2026-01-27 17:36:33 CET; 5min ago
- Invocation: 1d3a1e268b3646eb82efa483711e7581
-   Main PID: 1112 (tailscale-autoc)
-         IP: 1.1M in, 265.2K out
-         IO: 1.8M read, 0B written
-      Tasks: 3 (limit: 4474)
-     Memory: 6.1M (peak: 6.9M)
-        CPU: 6.652s
-     CGroup: /system.slice/tailscale-autoconnect.service
-             ├─1112 /nix/store/mjhcjikhxps97mq5z54j4gjjfzgmsir5-bash-5.2p37/bin/bash /nix/store/snvzdd11hzf0nxfj4ixl629c2800idyq-unit-script-tailscale-autoconnect-start>
-             ├─1758 /nix/store/xr777l6vdpkdi16h9dpv89l3s6hp17h9-curl-8.12.1-bin/bin/curl -s --head --request GET https://google.com
-             └─1759 grep "200 OK"
-
-Jan 27 17:36:33 castit-player systemd[1]: Starting Automatic Tailscale Join...
-lines 1-16/16 (END)
+  security.rtkit.enable = true;
 
 
   # 4. KIOSK DISPLAY

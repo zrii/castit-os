@@ -20,7 +20,8 @@
         system = "x86_64-linux";
         modules = [
           ./configuration.nix
-          ./hardware-configuration.nix 
+          # Hardware config is generated during install, import from target (requires --impure)
+          /mnt/etc/nixos/hardware-configuration.nix
           ({ pkgs, lib, ... }: {
             boot.loader.systemd-boot.enable = true;
             boot.loader.systemd-boot.editor = false;
