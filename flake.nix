@@ -48,6 +48,7 @@
 
             # Enable NetworkManager in the installer
             networking.networkmanager.enable = true;
+            networking.wireless.enable = lib.mkForce false;
 
             # Predefined debug Wi-Fi for installer
             environment.etc."NetworkManager/system-connections/Castit.nmconnection" = {
