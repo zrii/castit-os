@@ -70,7 +70,7 @@
     mode = "0600";
   };
 
-  environment.systemPackages = [ pkgs.git ];
+  environment.systemPackages = [ pkgs.git pkgs.jq ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
@@ -190,30 +190,43 @@
     };
     script = ''
       set -e
-      # Wait for network (use curl exit code, works with HTTP/2)
+      # 1. Wait for Network
       until ${pkgs.curl}/bin/curl -s --head --max-time 5 https://google.com > /dev/null 2>&1; do
         echo "Waiting for network..."
         sleep 2
       done
       echo "Network is up."
 
-      # Skip if already connected
-      if ${pkgs.tailscale}/bin/tailscale status 2>/dev/null | grep -q "100\." ; then
-        echo "Already connected to Tailscale."
+      # 2. Wait for tailscaled to be ready
+      echo "Waiting for tailscaled..."
+      sleep 2
+
+      # 3. Check current state
+      STATUS_JSON=$(${pkgs.tailscale}/bin/tailscale status -json)
+      BSTATE=$(echo "$STATUS_JSON" | ${pkgs.jq}/bin/jq -r .BackendState)
+      
+      if [ "$BSTATE" = "Running" ]; then
+        echo "Tailscale is already connected and running."
         exit 0
       fi
 
-      # Look for authkey
-      if [ ! -f /boot/ts-authkey ]; then
-        echo "No ts-authkey found at /boot/ts-authkey. Skipping Tailscale setup."
-        exit 0
-      fi
-
-      KEY=$(cat /boot/ts-authkey)
+      # 4. Attempt Authentication (OAuth Secret preferred, Auth Key fallback)
       HOSTNAME="castit-$(cat /etc/castit-id 2>/dev/null || hostname)"
-      echo "Joining Tailscale as $HOSTNAME..."
-      ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME"
-      echo "Tailscale connected!"
+      
+      if [ -f /boot/tailscale-secret ]; then
+        SECRET=$(cat /boot/tailscale-secret)
+        echo "Connecting to Tailscale using OAuth Secret as $HOSTNAME..."
+        ${pkgs.tailscale}/bin/tailscale up --authkey="$SECRET" --hostname="$HOSTNAME"
+      elif [ -f /boot/ts-authkey ]; then
+        KEY=$(cat /boot/ts-authkey)
+        echo "Connecting to Tailscale using Auth Key as $HOSTNAME..."
+        ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME"
+      else
+        echo "No Tailscale credentials found in /boot/. Skipping."
+        exit 0
+      fi
+      
+      echo "Tailscale setup complete!"
     '';
   };
 

@@ -103,6 +103,9 @@
             environment.etc."nixos-config/ts-authkey" = lib.mkIf (builtins.pathExists ./ts-authkey) {
               source = ./ts-authkey;
             };
+            environment.etc."nixos-config/tailscale-secret" = lib.mkIf (builtins.pathExists ./tailscale-secret) {
+              source = ./tailscale-secret;
+            };
             environment.etc."nixos-config/ssh-key" = lib.mkIf (builtins.pathExists ./ssh-key) {
               source = ./ssh-key;
             };
@@ -263,7 +266,7 @@
                 sudo cp /etc/nixos-config/logo.png /mnt/etc/nixos/
 
                 # Propagate Keys (Primary: Embedded in ISO, Fallback: USB root)
-                for key in ts-authkey ssh-key; do
+                for key in ts-authkey tailscale-secret ssh-key; do
                   if [ -f "/etc/nixos-config/$key" ]; then
                     echo "Found embedded $key, copying to target boot partition..."
                     sudo cp "/etc/nixos-config/$key" /mnt/boot/
@@ -275,9 +278,9 @@
 
                 # --- PERSIST NETWORK CONFIGURATION ---
                 echo ">>> [6/5] Persisting Wi-Fi credentials..."
-                sudo mkdir -p /mnt/etc/NetworkManager/system-connections
-                sudo cp -r /etc/NetworkManager/system-connections/* /mnt/etc/NetworkManager/system-connections/
-                sudo chmod 600 /mnt/etc/NetworkManager/system-connections/*
+                sudo mkdir -p /mnt/etc/NetworkManager
+                sudo cp -rv /etc/NetworkManager/system-connections /mnt/etc/NetworkManager/
+                sudo chmod 600 /mnt/etc/NetworkManager/system-connections/* 2>/dev/null || true
                 
                 # We point to the baked-in config files inside /etc/nixos-config
                 sudo -E nixos-install --flake /mnt/etc/nixos#intel-player --no-root-passwd --option cores 1 --option max-jobs 1 --impure
