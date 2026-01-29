@@ -4,6 +4,10 @@
   networking.networkmanager.enable = true; 
   time.timeZone = "Europe/Amsterdam"; 
 
+  # 1.2 DRIVERS & FIRMWARE
+  nixpkgs.config.allowUnfree = true;
+  hardware.enableAllFirmware = true;
+
   # 1.1 ASSETS
   environment.etc."castit/offline.html".source = ./assets/offline.html;
 
