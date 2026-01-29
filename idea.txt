@@ -1,5 +1,9 @@
-can android application open ssh connection for debugging
-create a isgnatire per machine, of some sort, a generated file on each startup or similar.
-Idea - SVI playeri da instaliraju skripte, i da mogu i kernle da podizu na nove verzije
-Da idu i da dodaju SSHHa preko njega mozemo da debugujemo i console, poput ovo gsot je zavrseno za nixos
-Tailgate da se napravi sada i da se istestira
+can we integrate eink poster minew into castit completly - along with slide creator.
+
+service worker does not cahce things on slide creator part.
+
+can android application open ssh connection for debugging.
+
+Idea - SVI playeri da instaliraju skripte, i da mogu i kernle da podizu na nove verzije.
+Da idu i da dodaju SSHHa preko njega mozemo da debugujemo i console, poput ovo gsot je zavrseno za nixos.
+             
