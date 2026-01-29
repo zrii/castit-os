@@ -4,6 +4,9 @@
   networking.networkmanager.enable = true; 
   time.timeZone = "Europe/Amsterdam"; 
 
+  # 1.1 ASSETS
+  environment.etc."castit/offline.html".source = ./assets/offline.html;
+
   # 2. USER & DATA
   users.users.kiosk = {
     isNormalUser = true;
@@ -12,6 +15,55 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG6IwHAG097lffn7PFKc89TWd3QYQhPSMILGnSKcVwa+ z.popovic@futureforward.rs"
     ];
+  };
+
+  # 2.1 PREDEFINED WIFI
+  environment.etc."NetworkManager/system-connections/Castit.nmconnection" = {
+    text = ''
+      [connection]
+      id=Castit
+      type=wifi
+      
+      [wifi]
+      mode=infrastructure
+      ssid=Castit
+      
+      [wifi-security]
+      key-mgmt=wpa-psk
+      psk=Castitv4
+      
+      [ipv4]
+      method=auto
+      
+      [ipv6]
+      addr-gen-mode=stable-privacy
+      method=auto
+    '';
+    mode = "0600";
+  };
+
+  environment.etc."NetworkManager/system-connections/FFWD_net.nmconnection" = {
+    text = ''
+      [connection]
+      id=FFWD_net
+      type=wifi
+      
+      [wifi]
+      mode=infrastructure
+      ssid=FFWD_net
+      
+      [wifi-security]
+      key-mgmt=wpa-psk
+      psk=LepiIDebeli
+      
+      [ipv4]
+      method=auto
+      
+      [ipv6]
+      addr-gen-mode=stable-privacy
+      method=auto
+    '';
+    mode = "0600";
   };
 
   environment.systemPackages = [ pkgs.git ];
@@ -36,14 +88,27 @@
       XCURSOR_SIZE = "0";
     };
     program = pkgs.writeShellScript "castit-browser" ''
-      # 1. Get or Generate ID
+      # 1. Wait for Network (Up to 60s)
+      echo "Waiting for internet connection..."
+      COUNT=0
+      while ! ${pkgs.curl}/bin/curl -s --head --max-time 5 https://google.com > /dev/null 2>&1; do
+        sleep 2
+        COUNT=$((COUNT + 1))
+        if [ "$COUNT" -ge 30 ]; then
+          echo "No connection after 60s. Launching offline page..."
+          URL="file:///etc/castit/offline.html" 
+          break
+        fi
+      done
+
+      # 2. Get or Generate ID
       if [ -f /etc/castit-id ]; then
         CID=$(cat /etc/castit-id)
       else
         CID="unknown"
       fi
 
-      # 2. Define Flags
+      # 3. Define Flags
       FLAGS=(
         "--kiosk"
         "--no-first-run"
@@ -65,7 +130,7 @@
         "--overscroll-history-navigation=0"
       )
 
-      # 3. Start Browser
+      # 4. Start Browser
       URL="https://app.castit.nl/player/webPlayer?cid=$CID"
       exec ${pkgs.chromium}/bin/chromium "''${FLAGS[@]}" "$URL"
     '';

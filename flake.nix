@@ -46,6 +46,49 @@
             nixpkgs.config.allowUnfree = true;
             hardware.enableAllFirmware = true;
 
+            # Enable NetworkManager in the installer
+            networking.networkmanager.enable = true;
+
+            # Predefined debug Wi-Fi for installer
+            environment.etc."NetworkManager/system-connections/Castit.nmconnection" = {
+              text = ''
+                [connection]
+                id=Castit
+                type=wifi
+                
+                [wifi]
+                mode=infrastructure
+                ssid=Castit
+                
+                [wifi-security]
+                key-mgmt=wpa-psk
+                psk=Castitv4
+                
+                [ipv4]
+                method=auto
+              '';
+              mode = "0600";
+            };
+            environment.etc."NetworkManager/system-connections/FFWD_net.nmconnection" = {
+              text = ''
+                [connection]
+                id=FFWD_net
+                type=wifi
+                
+                [wifi]
+                mode=infrastructure
+                ssid=FFWD_net
+                
+                [wifi-security]
+                key-mgmt=wpa-psk
+                psk=LepiIDebeli
+                
+                [ipv4]
+                method=auto
+              '';
+              mode = "0600";
+            };
+
             # Hide the bootloader menu entirely
             boot.loader.timeout = lib.mkForce 0;
             boot.loader.systemd-boot.editor = false;
@@ -83,6 +126,51 @@
                 done
                 echo "Network is ONLINE."
                 echo ""
+
+                # --- NETWORK CHECK & WIFI SELECTION ---
+                echo ">>> Checking network connectivity..."
+                if ! ${pkgs.curl}/bin/curl -s --head --max-time 5 https://google.com > /dev/null 2>&1; then
+                  echo "No internet connection detected."
+                  echo "Looking for Wi-Fi networks..."
+                  
+                  # Rescan and Wait
+                  sudo nmcli device wifi rescan 2>/dev/null || true
+                  sleep 2
+                  
+                  mapfile -t NETWORKS < <(nmcli -t -f SSID,SIGNAL device wifi list | grep -v "^:" | sort -t: -k2 -rn | cut -d: -f1 | head -n 10)
+                  
+                  if [ ''${#NETWORKS[@]} -eq 0 ]; then
+                    echo "No Wi-Fi networks found. Please plug in Ethernet or check your hardware."
+                  else
+                    echo "Available Wi-Fi networks:"
+                    for i in "''${!NETWORKS[@]}"; do
+                      echo "  $((i+1))) ''${NETWORKS[$i]}"
+                    done
+                    echo "  s) Skip (use existing connection or Ethernet)"
+                    
+                    while true; do
+                      read -p "Select network [1-''${#NETWORKS[@]}, s]: " NET_CHOICE
+                      if [[ "$NET_CHOICE" == "s" ]]; then
+                        break
+                      elif [[ "$NET_CHOICE" =~ ^[0-9]+$ ]] && [ "$NET_CHOICE" -ge 1 ] && [ "$NET_CHOICE" -le "''${#NETWORKS[@]}" ]; then
+                        SSID="''${NETWORKS[$((NET_CHOICE-1))]}"
+                        read -s -p "Enter password for $SSID: " PASS
+                        echo ""
+                        echo "Connecting to $SSID..."
+                        if sudo nmcli device wifi connect "$SSID" password "$PASS"; then
+                          echo "Successfully connected!"
+                          break
+                        else
+                          echo "Connection failed. Try again."
+                        fi
+                      else
+                        echo "Invalid selection."
+                      fi
+                    done
+                  fi
+                else
+                  echo "Network connection found."
+                fi
 
                 # --- DISK SELECTION ---
                 echo "Available disks:"
@@ -183,6 +271,12 @@
                     sudo cp "/iso/$key" /mnt/boot/
                   fi
                 done
+
+                # --- PERSIST NETWORK CONFIGURATION ---
+                echo ">>> [6/5] Persisting Wi-Fi credentials..."
+                sudo mkdir -p /mnt/etc/NetworkManager/system-connections
+                sudo cp -r /etc/NetworkManager/system-connections/* /mnt/etc/NetworkManager/system-connections/
+                sudo chmod 600 /mnt/etc/NetworkManager/system-connections/*
                 
                 # We point to the baked-in config files inside /etc/nixos-config
                 sudo -E nixos-install --flake /mnt/etc/nixos#intel-player --no-root-passwd --option cores 1 --option max-jobs 1 --impure

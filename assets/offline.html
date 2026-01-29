@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Castit OS - Offline</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            border: 1px solid #333;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #00aaff; }
+        p { font-size: 1.2rem; color: #ccc; line-height: 1.6; }
+        .id-box {
+            margin: 20px 0;
+            padding: 15px;
+            background: #222;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.5rem;
+            color: #00ff00;
+        }
+        .instructions {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            font-size: 1rem;
+            color: #888;
+        }
+        kbd {
+            background: #444;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Offline</h1>
+        <p>This Castit OS player is currently unable to reach the internet.</p>
+        
+        <div class="id-box">
+            Device ID: <span id="device-id">Loading...</span>
+        </div>
+
+        <div class="instructions">
+            <p><strong>To fix the connection:</strong></p>
+            <p>1. Plug in a keyboard.</p>
+            <p>2. Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd> to switch to terminal.</p>
+            <p>3. Log in as <code>kiosk</code> and type <code>nmtui</code> to select a Wi-Fi network.</p>
+            <p>4. Once connected, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F1</kbd> to return.</p>
+        </div>
+    </div>
+    <script>
+        fetch('/etc/castit-id')
+            .then(response => response.text())
+            .then(id => {
+                document.getElementById('device-id').textContent = id.trim();
+            })
+            .catch(() => {
+                document.getElementById('device-id').textContent = "Unknown";
+            });
+    </script>
+</body>
+</html>
