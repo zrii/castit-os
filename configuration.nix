@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }: {
   # 1. BOOTLOADER & HARDWARE
-  networking.hostName = "castit-player";
+  networking.hostName = lib.mkDefault "castit-player";
   networking.networkmanager.enable = true; 
   time.timeZone = "Europe/Amsterdam"; 
 
@@ -197,8 +197,11 @@
       done
       echo "Network is up."
 
-      # 2. Wait for tailscaled to be ready
-      echo "Waiting for tailscaled..."
+      # 2. Wait for tailscaled socket
+      echo "Waiting for tailscaled socket..."
+      until [ -S /var/run/tailscale/tailscaled.sock ]; do
+        sleep 1
+      done
       sleep 2
 
       # 3. Check current state
@@ -210,17 +213,23 @@
         exit 0
       fi
 
-      # 4. Attempt Authentication (OAuth Secret preferred, Auth Key fallback)
-      HOSTNAME="castit-$(cat /etc/castit-id 2>/dev/null || hostname)"
+      # 4. Attempt Authentication
+      CID=$(cat /etc/castit-id 2>/dev/null || hostname)
+      HOSTNAME="castit-$CID"
       
+      # NOTE: OAuth secrets MUST have a tag assigned in the Tailscale console (e.g. tag:nixos)
+      # and the --advertise-tags flag must be used.
+      TAGS="--advertise-tags=tag:nixos"
+
       if [ -f /boot/tailscale-secret ]; then
         SECRET=$(cat /boot/tailscale-secret)
         echo "Connecting to Tailscale using OAuth Secret as $HOSTNAME..."
-        ${pkgs.tailscale}/bin/tailscale up --authkey="$SECRET" --hostname="$HOSTNAME"
+        # Add ?ephemeral=false if needed, but standard OAuth is non-ephemeral by default if not specified
+        ${pkgs.tailscale}/bin/tailscale up --authkey="$SECRET" --hostname="$HOSTNAME" $TAGS --accept-routes --accept-dns=false
       elif [ -f /boot/ts-authkey ]; then
         KEY=$(cat /boot/ts-authkey)
         echo "Connecting to Tailscale using Auth Key as $HOSTNAME..."
-        ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME"
+        ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME" --accept-routes --accept-dns=false
       else
         echo "No Tailscale credentials found in /boot/. Skipping."
         exit 0
@@ -245,6 +254,10 @@
            cat /etc/machine-id | cut -c1-12 > /etc/castit-id
         fi
       fi
+      
+      # Set system hostname to match Device ID
+      ID=$(cat /etc/castit-id)
+      ${pkgs.util-linux}/bin/hostnamectl set-hostname "castit-$ID"
     '';
   };
 
