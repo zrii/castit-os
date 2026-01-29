@@ -42,6 +42,10 @@
             system.nixos.distroName = "Castit OS";
             system.nixos.distroId = "castit";
 
+            # Enable non-free firmware (crucial for some Ethernet/WiFi cards)
+            nixpkgs.config.allowUnfree = true;
+            hardware.enableAllFirmware = true;
+
             # Hide the bootloader menu entirely
             boot.loader.timeout = lib.mkForce 0;
             boot.loader.systemd-boot.editor = false;
