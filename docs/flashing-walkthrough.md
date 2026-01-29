@@ -72,4 +72,14 @@ To enable Tailscale and SSH automatically, the recommended method is to **bake t
 2. Plug it into the target Intel player hardware.
 3. Boot from the USB.
 4. **Zero-Touch**: The system will automatically skip the boot menu and start the installer.
-5. **Safety**: Wait for the 20-second countdown (or press a key to cancel if needed).
+
+## 7. Troubleshooting: Boot Issues
+### "Secure Boot Violation" / Invalid Signature
+If you see an error about **"Invalid Signature"** or **"Secure Boot Violation"** upon booting:
+
+1.  Restart the NUC and enter BIOS (usually by pressing **F2**).
+2.  Navigate to the **Boot** or **Security** tab.
+3.  Set **Secure Boot** to **Disabled**.
+4.  Save Changes and Exit (F10).
+
+This is required because the custom Castit OS ISO is not signed by Microsoft keys.

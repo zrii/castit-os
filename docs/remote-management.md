@@ -86,3 +86,12 @@ The update service runs:
 - **Tunnel the port 9222 for chrome debugging** - `ssh -L [LOCAL_PORT]:localhost:9222 kiosk@[IP_ADDRESS]`
 - **Open chrome on your machine** - `chrome://inspect/#devices`
 - **Add configuration** - `chrome://inspect/#devices` -> `Configure...` -> Add `localhost:[LOCAL_PORT]`
+
+## in case tailscale is not started, it may be the key ois dead...
+
+# Replace with your new key
+echo "tskey-auth-kFCHoCbSGA11CNTRL-Uo3qzrYiPuSz8h8iyqBptSdc712DrVCVS" | sudo tee /boot/ts-authkey
+# Connect
+sudo tailscale up --authkey="$(cat /boot/ts-authkey)" --hostname="castit-$(cat /etc/castit-id)"
+# Verify
+sudo tailscale status

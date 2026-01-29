@@ -1,0 +1,6 @@
+# Replace with your new key
+echo "tskey-auth-kFCHoCbSGA11CNTRL-Uo3qzrYiPuSz8h8iyqBptSdc712DrVCVS" | sudo tee /boot/ts-authkey
+# Connect
+sudo tailscale up --authkey="$(cat /boot/ts-authkey)" --hostname="castit-$(cat /etc/castit-id)"
+# Verify
+sudo tailscale status
