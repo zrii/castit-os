@@ -102,27 +102,28 @@
             environment.etc."nixos-config/assets".source = ./assets;
 
             # Embed keys. Try tracked first, then fallback to untracked via absolute path (requires --impure)
-            environment.etc = 
-              let
-                pwd = builtins.getEnv "PWD";
-                mkSecret = name: 
-                  let 
-                    trackedPath = ./. + "/${name}";
-                    untrackedPath = /. + "${pwd}/${name}";
-                  in
-                  if builtins.pathExists trackedPath then {
-                    source = trackedPath;
-                  } else if (pwd != "" && builtins.pathExists untrackedPath) then {
-                    source = untrackedPath;
-                  } else null;
-                
-                secrets = lib.filterAttrs (n: v: v != null) {
-                  "nixos-config/ts-authkey" = mkSecret "ts-authkey";
-                  "nixos-config/tailscale-secret" = mkSecret "tailscale-secret";
-                  "nixos-config/ssh-key" = mkSecret "ssh-key";
-                };
-              in
-              secrets;
+            let
+              pwd = builtins.getEnv "PWD";
+              mkSecret = name: 
+                let 
+                  trackedPath = ./. + "/${name}";
+                  untrackedPath = /. + "${pwd}/${name}";
+                in
+                if builtins.pathExists trackedPath then {
+                  source = trackedPath;
+                } else if (pwd != "" && builtins.pathExists untrackedPath) then {
+                  source = untrackedPath;
+                } else null;
+              
+              s_ts = mkSecret "ts-authkey";
+              s_tail = mkSecret "tailscale-secret";
+              s_ssh = mkSecret "ssh-key";
+            in
+            {
+              environment.etc."nixos-config/ts-authkey" = lib.mkIf (s_ts != null) s_ts;
+              environment.etc."nixos-config/tailscale-secret" = lib.mkIf (s_tail != null) s_tail;
+              environment.etc."nixos-config/ssh-key" = lib.mkIf (s_ssh != null) s_ssh;
+            }
 
             # Added compatibility modules for Stage 1 boot
             boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];
