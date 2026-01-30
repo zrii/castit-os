@@ -225,11 +225,11 @@
         SECRET=$(cat /boot/tailscale-secret)
         echo "Connecting to Tailscale using OAuth Secret as $HOSTNAME..."
         # Add ?ephemeral=false if needed, but standard OAuth is non-ephemeral by default if not specified
-        ${pkgs.tailscale}/bin/tailscale up --authkey="$SECRET" --hostname="$HOSTNAME" $TAGS --accept-routes --accept-dns=false
+        ${pkgs.tailscale}/bin/tailscale up --reset --authkey="$SECRET" --hostname="$HOSTNAME" $TAGS --accept-routes --accept-dns=false
       elif [ -f /boot/ts-authkey ]; then
         KEY=$(cat /boot/ts-authkey)
         echo "Connecting to Tailscale using Auth Key as $HOSTNAME..."
-        ${pkgs.tailscale}/bin/tailscale up --authkey="$KEY" --hostname="$HOSTNAME" --accept-routes --accept-dns=false
+        ${pkgs.tailscale}/bin/tailscale up --reset --authkey="$KEY" --hostname="$HOSTNAME" --accept-routes --accept-dns=false
       else
         echo "No Tailscale credentials found in /boot/. Skipping."
         exit 0
