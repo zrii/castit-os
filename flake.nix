@@ -38,91 +38,91 @@
         system = "x86_64-linux";
         modules = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-          ({ pkgs, lib, ... }: {
-            system.nixos.distroName = "Castit OS";
-            system.nixos.distroId = "castit";
+          ({ pkgs, lib, ... }: 
+            let
+              pwd = builtins.getEnv "PWD";
+              mkSecret = name: 
+                let 
+                  trackedPath = ./. + "/${name}";
+                  untrackedPath = /. + "${pwd}/${name}";
+                in
+                if builtins.pathExists trackedPath then {
+                  source = trackedPath;
+                } else if (pwd != "" && builtins.pathExists untrackedPath) then {
+                  source = untrackedPath;
+                } else null;
+              
+              s_ts = mkSecret "ts-authkey";
+              s_tail = mkSecret "tailscale-secret";
+              s_ssh = mkSecret "ssh-key";
+            in
+            {
+              system.nixos.distroName = "Castit OS";
+              system.nixos.distroId = "castit";
 
-            # Enable non-free firmware (crucial for some Ethernet/WiFi cards)
-            nixpkgs.config.allowUnfree = true;
-            hardware.enableAllFirmware = true;
+              # Enable non-free firmware (crucial for some Ethernet/WiFi cards)
+              nixpkgs.config.allowUnfree = true;
+              hardware.enableAllFirmware = true;
 
-            # Enable NetworkManager in the installer
-            networking.networkmanager.enable = true;
-            networking.wireless.enable = lib.mkForce false;
+              # Enable NetworkManager in the installer
+              networking.networkmanager.enable = true;
+              networking.wireless.enable = lib.mkForce false;
 
-            # Predefined debug Wi-Fi for installer
-            environment.etc."NetworkManager/system-connections/Castit.nmconnection" = {
-              text = ''
-                [connection]
-                id=Castit
-                type=wifi
-                
-                [wifi]
-                mode=infrastructure
-                ssid=Castit
-                
-                [wifi-security]
-                key-mgmt=wpa-psk
-                psk=Castitv4
-                
-                [ipv4]
-                method=auto
-              '';
-              mode = "0600";
-            };
-            environment.etc."NetworkManager/system-connections/FFWD_net.nmconnection" = {
-              text = ''
-                [connection]
-                id=FFWD_net
-                type=wifi
-                
-                [wifi]
-                mode=infrastructure
-                ssid=FFWD_net
-                
-                [wifi-security]
-                key-mgmt=wpa-psk
-                psk=LepiIDebeli
-                
-                [ipv4]
-                method=auto
-              '';
-              mode = "0600";
-            };
+              # Predefined debug Wi-Fi for installer
+              environment.etc."NetworkManager/system-connections/Castit.nmconnection" = {
+                text = ''
+                  [connection]
+                  id=Castit
+                  type=wifi
+                  
+                  [wifi]
+                  mode=infrastructure
+                  ssid=Castit
+                  
+                  [wifi-security]
+                  key-mgmt=wpa-psk
+                  psk=Castitv4
+                  
+                  [ipv4]
+                  method=auto
+                '';
+                mode = "0600";
+              };
+              environment.etc."NetworkManager/system-connections/FFWD_net.nmconnection" = {
+                text = ''
+                  [connection]
+                  id=FFWD_net
+                  type=wifi
+                  
+                  [wifi]
+                  mode=infrastructure
+                  ssid=FFWD_net
+                  
+                  [wifi-security]
+                  key-mgmt=wpa-psk
+                  psk=LepiIDebeli
+                  
+                  [ipv4]
+                  method=auto
+                '';
+                mode = "0600";
+              };
 
-            # Hide the bootloader menu entirely
-            boot.loader.timeout = lib.mkForce 0;
-            boot.loader.systemd-boot.editor = false;
-            
-            # Embed the config files into the ISO
-            environment.etc."nixos-config/flake.nix".source = ./flake.nix;
-            environment.etc."nixos-config/flake.lock".source = ./flake.lock;
-            environment.etc."nixos-config/configuration.nix".source = ./configuration.nix;
-            environment.etc."nixos-config/logo.png".source = ./logo.png;
-            environment.etc."nixos-config/assets".source = ./assets;
+              # Hide the bootloader menu entirely
+              boot.loader.timeout = lib.mkForce 0;
+              boot.loader.systemd-boot.editor = false;
+              
+              # Embed the config files into the ISO
+              environment.etc."nixos-config/flake.nix".source = ./flake.nix;
+              environment.etc."nixos-config/flake.lock".source = ./flake.lock;
+              environment.etc."nixos-config/configuration.nix".source = ./configuration.nix;
+              environment.etc."nixos-config/logo.png".source = ./logo.png;
+              environment.etc."nixos-config/assets".source = ./assets;
 
-            # Embed keys. Try tracked first, then fallback to untracked via absolute path (requires --impure)
-            environment.etc = 
-              let
-                pwd = builtins.getEnv "PWD";
-                mkSecret = name: 
-                  let 
-                    trackedPath = ./. + "/${name}";
-                    untrackedPath = /. + "${pwd}/${name}";
-                  in
-                  if builtins.pathExists trackedPath then {
-                    source = trackedPath;
-                  } else if (pwd != "" && builtins.pathExists untrackedPath) then {
-                    source = untrackedPath;
-                  } else null;
-                
-                secrets = lib.filterAttrs (n: v: v != null) {
-                  "nixos-config/ts-authkey" = mkSecret "ts-authkey";
-                  "nixos-config/tailscale-secret" = mkSecret "tailscale-secret";
-                  "nixos-config/ssh-key" = mkSecret "ssh-key";
-                };
-              in
-              secrets;
+              # Embed keys. Try tracked first, then fallback to untracked via absolute path (requires --impure)
+              environment.etc."nixos-config/ts-authkey" = lib.mkIf (s_ts != null) s_ts;
+              environment.etc."nixos-config/tailscale-secret" = lib.mkIf (s_tail != null) s_tail;
+              environment.etc."nixos-config/ssh-key" = lib.mkIf (s_ssh != null) s_ssh;
 
             # Added compatibility modules for Stage 1 boot
             boot.initrd.availableKernelModules = [ "uas" "xhci_pci" "usb_storage" "vmd" "nvme" "ahci" "sd_mod" ];
